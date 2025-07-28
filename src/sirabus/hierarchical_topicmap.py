@@ -41,14 +41,14 @@ class HierarchicalTopicMap:
 
         return self
 
-    def _resolve_topics(self, t: type, suffix: str | None = None) -> Iterable[str]:
+    def _resolve_topics(self, t: type, suffix: str | None = None) -> str:
         topic = t.__topic__ if hasattr(t, "__topic__") else t.__name__
-        if len(t.__bases__) > 0:
-            for st in t.__bases__:
-                if st not in self.__excepted_bases__:
-                    yield from self._resolve_topics(st, topic)
-            # yield from self._resolve_topics(t.__base__, prefix)
-        yield topic if suffix is None else f"{topic}.{suffix}"
+        # yield topic if suffix is None else f"{topic}.{suffix}"
+        if any(tb for tb in t.__bases__ if tb not in self.__excepted_bases__):
+            tbase = self._resolve_topics(t.__bases__[0], suffix)
+            topic = f"{tbase}.{topic}" if suffix is None else f"{tbase}.{topic}.{suffix}"
+            return topic
+        return topic
 
     def register_module(self, module: object) -> Self:
         """
@@ -77,8 +77,8 @@ class HierarchicalTopicMap:
         """
         t = instance if isinstance(instance, type) else type(instance)
         if t in self.__topics.values():
-            n = list(self._resolve_topics(t))
-            return next(iter(n), None) if n else None
+            n = self._resolve_topics(t)
+            return n
         return None
 
     def get_all_hierarchical_topics(self) -> Iterable[str]:
@@ -87,7 +87,7 @@ class HierarchicalTopicMap:
         :return: A list of all the hierarchical topics.
         """
         for topic in self.__topics.values():
-            yield from self._resolve_topics(topic)
+            yield self._resolve_topics(topic)
 
     def build_parent_child_relationships(self) -> Dict[str, Set[str]]:
         """
@@ -97,7 +97,7 @@ class HierarchicalTopicMap:
 
         relationships: Dict[str, Set[str]] = {}
 
-        def visit(cls: type):
+        def visit(cls: type) -> None:
             for base in cls.__bases__:
                 if base not in self.__excepted_bases__:
                     parent_type = self.resolve_type(Topic.get(base))

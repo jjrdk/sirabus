@@ -7,7 +7,7 @@ from aett.eventstore import Topic
 from behave import given, when, then, step, use_step_matcher
 from testcontainers.rabbitmq import RabbitMqContainer
 
-from features.steps.test_types import SubTestEvent, OtherTestEvent
+from features.steps.test_types import SubTestEvent, OtherTestEvent, NestedTestEvent
 from sirabus import generate_vhost_name
 from sirabus.servicebus.cloudevent_servicebus import (
     create_servicebus_for_amqp_cloudevent,
@@ -56,6 +56,7 @@ def step_impl2(context):
     context.topic_map.add(Topic.get(SubTestEvent), SubTestEvent)
     context.topic_map.add(Topic.get(SubTestEvent), SubTestEvent)
     context.topic_map.add(Topic.get(OtherTestEvent), OtherTestEvent)
+    context.topic_map.add(Topic.get(NestedTestEvent), NestedTestEvent)
 
 
 @step("amqp broker is configured with the hierarchical topic map")
