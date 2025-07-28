@@ -11,6 +11,15 @@ class TestEvent(BaseEvent):
     pass
 
 
+@Topic("test_sub")
+class SubTestEvent(TestEvent):
+    pass
+
+@Topic("other")
+class OtherTestEvent(BaseEvent):
+    pass
+
+
 class TestEventHandler(IHandleEvents[TestEvent]):
     def __init__(self, wait_handle: threading.Event):
         self.wait_handle = wait_handle

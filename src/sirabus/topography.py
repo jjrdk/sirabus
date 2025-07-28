@@ -1,5 +1,5 @@
 import logging
-from typing import List, Set
+from typing import Set
 
 import aio_pika
 from aio_pika.abc import AbstractRobustConnection, AbstractChannel, ExchangeType
@@ -23,42 +23,27 @@ class TopographyBuilder:
 
     async def _build_topography(self, channel: AbstractChannel) -> None:
         exchanges: Set[str] = set()
-        bindings: List[str] = []
-        alltopics: Set[str] = set(self.__topic_map.get_all_hierarchical_topics())
-        for topic in alltopics:
-            await channel.declare_exchange(
-                name=topic, type=ExchangeType.TOPIC, durable=True
-            )
-            exchanges.add(topic)
-        for key in list(exchanges):
-            parts = key.split(".")
-            if len(parts) > 1:
-                for i in range(1, len(parts)):
-                    parent = ".".join(parts[:-i])
-                    # Declare the parent exchange if it does not exist
-                    if parent not in exchanges:
-                        await channel.declare_exchange(
-                            name=parent,
-                            type=ExchangeType.TOPIC,
-                            durable=True,
-                        )
-                        exchanges.add(parent)
-                    # Bind the parent exchange to the child exchange
-                    if i > 1:
-                        routing_key = f"{parent}.#"
-                    else:
-                        routing_key = key
-                    if routing_key not in bindings:
-                        destination = await channel.get_exchange(key)
-                        await destination.bind(exchange=parent, routing_key=routing_key)
-                        bindings.append(routing_key)
-            else:
-                # If it's a root topic, ensure it is bound to the amq.topic exchange
-                if key not in bindings:
-                    destination = await channel.get_exchange(key)
-                    bind_response = await destination.bind(
-                        exchange="amq.topic", routing_key=f"{key}.#"
-                    )
-                    logging.debug(f"Bound to amq.topic with response {bind_response}")
-                    bindings.append(key)
+        await self._declare_exchanges(channel, exchanges)
+        relationships = self.__topic_map.build_parent_child_relationships()
+        for key in relationships:
+            for child in relationships[key]:
+                # Declare the child exchange if it does not exist
+                if child not in exchanges:
+                    await self._declare_exchange(topic=child, channel=channel, exchanges=exchanges)
+                # Bind the child exchange to the parent exchange
+                destination = await channel.get_exchange(child)
+                bind_response = await destination.bind(exchange=key, routing_key=f"{child}.#")
+                logging.debug(f"Bound {child} to {key} with response {bind_response}")
         await channel.close()
+
+    async def _declare_exchanges(self, channel, exchanges):
+        all_topics = set(self.__topic_map.get_all_hierarchical_topics())
+        for topic in all_topics:
+            await self._declare_exchange(topic=topic, channel=channel, exchanges=exchanges)
+
+    @staticmethod
+    async def _declare_exchange(topic: str, channel: AbstractChannel, exchanges: Set[str]) -> None:
+        await channel.declare_exchange(
+            name=topic, type=ExchangeType.TOPIC, durable=True
+        )
+        exchanges.add(topic)
