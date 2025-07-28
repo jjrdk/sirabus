@@ -1,6 +1,6 @@
-# Shuttle Bus
+# SiraBus
 
-Shuttle Bus is a simple opinionated library for publishing and subscribing to events in an asynchronous and type-safe 
+SiraBus is a simple opinionated library for publishing and subscribing to events in an asynchronous and type-safe 
 manner (to the extent that type safety can be achieved in Python).
 
 Users publish events to an `IPublishEvents` interface, and users can subscribe to events by passing instances of an 
