@@ -9,12 +9,18 @@ from sirabus.servicebus import ServiceBus
 
 
 class InMemoryServiceBus(ServiceBus, MessageConsumer):
-    def __init__(self,
-                 topic_map: HierarchicalTopicMap,
-                 message_reader: Callable[[HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent]],
-                 handlers: List[IHandleEvents],
-                 message_pump: MessagePump) -> None:
-        super().__init__(topic_map=topic_map, message_reader=message_reader, handlers=handlers)
+    def __init__(
+        self,
+        topic_map: HierarchicalTopicMap,
+        message_reader: Callable[
+            [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent]
+        ],
+        handlers: List[IHandleEvents],
+        message_pump: MessagePump,
+    ) -> None:
+        super().__init__(
+            topic_map=topic_map, message_reader=message_reader, handlers=handlers
+        )
         self._message_pump = message_pump
         self._subscription = None
 

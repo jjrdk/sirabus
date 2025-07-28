@@ -15,6 +15,7 @@ class TestEvent(BaseEvent):
 class SubTestEvent(TestEvent):
     pass
 
+
 @Topic("other")
 class OtherTestEvent(BaseEvent):
     pass

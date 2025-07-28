@@ -10,12 +10,15 @@ from testcontainers.rabbitmq import RabbitMqContainer
 from features.steps.test_types import SubTestEvent, OtherTestEvent
 from sirabus import generate_vhost_name
 from sirabus.servicebus.cloudevent_servicebus import (
-    create_servicebus_for_amqp_cloudevent, create_servicebus_for_memory_cloudevent,
+    create_servicebus_for_amqp_cloudevent,
+    create_servicebus_for_memory_cloudevent,
 )
 from sirabus.servicebus.inmemory_servicebus import MessagePump
 from sirabus.topography import TopographyBuilder
-from sirabus.publisher.cloudevent_publisher import AmqpCloudEventPublisher, create_publisher_for_amqp_cloudevent, \
-    create_publisher_for_memory_cloudevent
+from sirabus.publisher.cloudevent_publisher import (
+    create_publisher_for_amqp_cloudevent,
+    create_publisher_for_memory_cloudevent,
+)
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 from tests.features.steps.test_types import TestEvent, TestEventHandler
 
@@ -73,7 +76,7 @@ def step_impl3(context):
 
 
 @step("in-memory broker is configured with the hierarchical topic map")
-def step_impl(context):
+def step_impl4(context):
     context.messagepump = MessagePump()
     context.messagepump.start()
     bus = create_servicebus_for_memory_cloudevent(
@@ -87,7 +90,7 @@ def step_impl(context):
 
 
 @when("I send a message to the amqp service bus")
-def step_impl4(context):
+def step_impl5(context):
     event = TestEvent(
         source="test",
         timestamp=datetime.datetime.now(datetime.timezone.utc),
@@ -100,21 +103,20 @@ def step_impl4(context):
 
 
 @when("I send a message to the in-memory service bus")
-def step_impl(context):
+def step_impl6(context):
     event = TestEvent(
         source="test",
         timestamp=datetime.datetime.now(datetime.timezone.utc),
         correlation_id=str(uuid.uuid4()),
     )
     publisher = create_publisher_for_memory_cloudevent(
-        topic_map=context.topic_map,
-        messagepump=context.messagepump
+        topic_map=context.topic_map, messagepump=context.messagepump
     )
     context.async_runner.run_async(publisher.publish(event))
 
 
 @then("the message is received by the subscriber")
-def step_impl5(context):
+def step_impl7(context):
     try:
         result = context.wait_handle.wait(timeout=15)
         assert result, "The message was not received by the subscriber in time"

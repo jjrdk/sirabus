@@ -3,16 +3,13 @@ import asyncio
 import threading
 import time
 from abc import ABC, abstractmethod
-from asyncio import Future
-from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
-from typing import Generic, Type, TypeVar, get_args, Optional, Dict, Tuple, Coroutine
+from typing import Generic, Type, TypeVar, get_args, Optional, Dict, Tuple
 from uuid import UUID, uuid4
 
+from aett.eventstore import BaseEvent, Topic
 from aett.eventstore.base_command import BaseCommand
 from pydantic import BaseModel, Field
-
-from aett.eventstore import BaseEvent, Topic
 
 TEvent = TypeVar("TEvent", bound=BaseEvent, contravariant=True)
 TCommand = TypeVar("TCommand", bound=BaseCommand, contravariant=True)
@@ -156,7 +153,12 @@ class MessagePump:
             if not self._messages.empty():
                 headers, body = self._messages.get()
                 loop.run_until_complete(
-                    asyncio.gather(*[consumer.handle_message(headers, body) for consumer in self._consumers.values()])
+                    asyncio.gather(
+                        *[
+                            consumer.handle_message(headers, body)
+                            for consumer in self._consumers.values()
+                        ]
+                    )
                 )
                 print(f"Processed message with headers: {headers} and body: {body}")
             else:
@@ -167,3 +169,6 @@ class MessagePump:
         Stop the message pump.
         """
         self._stopped = True
+        if self._task:
+            self._task.join(timeout=5)
+            self._task = None

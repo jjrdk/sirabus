@@ -15,7 +15,7 @@ class ServiceBus(abc.ABC):
         message_reader: Callable[
             [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent]
         ],
-            handlers:List[IHandleEvents]
+        handlers: List[IHandleEvents],
     ) -> None:
         self._topic_map = topic_map
         self._message_reader = message_reader

@@ -1,5 +1,5 @@
 import inspect
-from typing import Dict, Set, Self, Any, List, Iterable, Tuple
+from typing import Dict, Set, Self, Any, Iterable
 
 from aett.eventstore import Topic, BaseEvent
 from pydantic import BaseModel
@@ -81,13 +81,6 @@ class HierarchicalTopicMap:
             return next(iter(n), None) if n else None
         return None
 
-    def get_all(self) -> List[str]:
-        """
-        Gets all the topics and their corresponding classes in the map.
-        :return: A dictionary of all the topics and their classes.
-        """
-        return list(self.__topics.keys())
-
     def get_all_hierarchical_topics(self) -> Iterable[str]:
         """
         Gets all the hierarchical topics in the map.
@@ -99,7 +92,6 @@ class HierarchicalTopicMap:
     def build_parent_child_relationships(self) -> Dict[str, Set[str]]:
         """
         Builds a list of parent-child relationships for the given topic.
-        :param topic_map: The topic to build relationships for.
         :return: A list of parent-child relationships.
         """
 
@@ -110,16 +102,24 @@ class HierarchicalTopicMap:
                 if base not in self.__excepted_bases__:
                     parent_type = self.resolve_type(Topic.get(base))
                     if not parent_type:
-                        raise RuntimeError(f"Base class '{base.__name__}' for '{cls.__name__}' not found in the topic map.")
-                    parent = self.get_hierarchical_topic( parent_type)
+                        raise RuntimeError(
+                            f"Base class '{base.__name__}' for '{cls.__name__}' not found in the topic map."
+                        )
+                    parent = self.get_hierarchical_topic(parent_type)
                     if not parent:
-                        raise RuntimeError(f"Parent topic for class '{cls.__name__}' not found in the topic map.")
+                        raise RuntimeError(
+                            f"Parent topic for class '{cls.__name__}' not found in the topic map."
+                        )
                     child_type = self.resolve_type(Topic.get(cls))
                     if not child_type:
-                        raise RuntimeError(f"Child class '{cls.__name__}' not found in the topic map.")
+                        raise RuntimeError(
+                            f"Child class '{cls.__name__}' not found in the topic map."
+                        )
                     child = self.get_hierarchical_topic(child_type)
                     if not child:
-                        raise RuntimeError(f"Child topic for class '{cls.__name__}' not found in the topic map.")
+                        raise RuntimeError(
+                            f"Child topic for class '{cls.__name__}' not found in the topic map."
+                        )
                     relationships.setdefault(parent, set()).add(child)
                     visit(base)
 
