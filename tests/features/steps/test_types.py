@@ -16,6 +16,11 @@ class SubTestEvent(TestEvent):
     pass
 
 
+@Topic("nested")
+class NestedTestEvent(SubTestEvent):
+    pass
+
+
 @Topic("other")
 class OtherTestEvent(BaseEvent):
     pass

@@ -46,9 +46,7 @@ class HierarchicalTopicMap:
         # yield topic if suffix is None else f"{topic}.{suffix}"
         if any(tb for tb in t.__bases__ if tb not in self.__excepted_bases__):
             tbase = self._resolve_topics(t.__bases__[0], suffix)
-            topic = (
-                f"{tbase}.{topic}" if suffix is None else f"{tbase}.{topic}.{suffix}"
-            )
+            topic = f"{tbase}.{topic}" if suffix is None else f"{tbase}.{topic}.{suffix}"
             return topic
         return topic
 
