@@ -27,5 +27,5 @@ Feature: Event Handling
     And events have been registered in the hierarchical topic map
     And amqp broker is configured with the hierarchical topic map
     When I send a test message to the amqp service bus
-    When I send a other message to the amqp service bus
+    When I send an other message to the amqp service bus
     Then the messages are received by the subscriber
