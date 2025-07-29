@@ -6,11 +6,12 @@ from cloudevents.pydantic import CloudEvent
 from sirabus import IHandleEvents
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 from sirabus.servicebus import ServiceBus
-from sirabus.servicebus.inmemory_servicebus import InMemoryServiceBus, MessagePump
+from sirabus.servicebus.inmemory_servicebus import InMemoryServiceBus
+from sirabus.message_pump import MessagePump
 
 
 def _transform_cloudevent_message(
-        topic_map: HierarchicalTopicMap, properties: dict, body: bytes
+    topic_map: HierarchicalTopicMap, properties: dict, body: bytes
 ) -> Tuple[dict, BaseEvent]:
     ce = CloudEvent.model_validate_json(body)
     event_type = topic_map.resolve_type(ce.type)
@@ -23,10 +24,10 @@ def _transform_cloudevent_message(
 
 
 def create_servicebus_for_amqp_cloudevent(
-        amqp_url: str,
-        topic_map: HierarchicalTopicMap,
-        handlers: List[IHandleEvents],
-        prefetch_count: int = 10,
+    amqp_url: str,
+    topic_map: HierarchicalTopicMap,
+    handlers: List[IHandleEvents],
+    prefetch_count: int = 10,
 ) -> ServiceBus:
     from sirabus.servicebus.amqp_servicebus import AmqpServiceBus
 
@@ -40,15 +41,13 @@ def create_servicebus_for_amqp_cloudevent(
 
 
 def create_servicebus_for_memory_cloudevent(
-        topic_map: HierarchicalTopicMap,
-        handlers: List[IHandleEvents],
-        message_pump: MessagePump
+    topic_map: HierarchicalTopicMap,
+    handlers: List[IHandleEvents],
+    message_pump: MessagePump,
 ) -> ServiceBus:
-    from sirabus.servicebus.amqp_servicebus import AmqpServiceBus
-
     return InMemoryServiceBus(
         topic_map=topic_map,
         handlers=handlers,
         message_reader=_transform_cloudevent_message,
-        message_pump=message_pump
+        message_pump=message_pump,
     )
