@@ -12,7 +12,7 @@ from sirabus.servicebus.cloudevent_servicebus import (
     create_servicebus_for_amqp_cloudevent,
     create_servicebus_for_memory_cloudevent,
 )
-from sirabus.servicebus.inmemory_servicebus import MessagePump
+from sirabus.message_pump import MessagePump
 from sirabus.topography import TopographyBuilder
 from sirabus.publisher.cloudevent_publisher import (
     create_publisher_for_amqp_cloudevent,

@@ -3,7 +3,8 @@ from typing import Callable, List, Tuple
 
 from aett.eventstore import BaseEvent
 
-from sirabus import IHandleEvents, MessageConsumer, MessagePump
+from sirabus import IHandleEvents
+from sirabus.message_pump import MessageConsumer, MessagePump
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 from sirabus.servicebus import ServiceBus
 

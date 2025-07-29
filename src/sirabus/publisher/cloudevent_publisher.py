@@ -8,7 +8,8 @@ from aio_pika import Message
 from cloudevents.pydantic import CloudEvent
 from pydantic import BaseModel, Field
 
-from sirabus import IPublishEvents, TEvent, MessagePump
+from sirabus import IPublishEvents, TEvent
+from sirabus.message_pump import MessagePump
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 
 

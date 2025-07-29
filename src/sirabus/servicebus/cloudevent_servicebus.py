@@ -6,7 +6,8 @@ from cloudevents.pydantic import CloudEvent
 from sirabus import IHandleEvents
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 from sirabus.servicebus import ServiceBus
-from sirabus.servicebus.inmemory_servicebus import InMemoryServiceBus, MessagePump
+from sirabus.servicebus.inmemory_servicebus import InMemoryServiceBus
+from sirabus.message_pump import MessagePump
 
 
 def _transform_cloudevent_message(
