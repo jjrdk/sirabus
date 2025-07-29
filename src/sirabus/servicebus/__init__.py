@@ -37,7 +37,7 @@ class ServiceBus(abc.ABC):
             *[
                 h.handle(event=event, headers=headers)
                 for h in self._handlers
-                if isinstance(event, type(h).event_type)
+                if hasattr(type(h), "event_type") and isinstance(event, type(h).event_type)
             ],
             return_exceptions=True,
         )
