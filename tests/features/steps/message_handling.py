@@ -7,7 +7,6 @@ from aett.eventstore import Topic
 from behave import given, when, then, step, use_step_matcher
 from testcontainers.rabbitmq import RabbitMqContainer
 
-from features.steps.test_types import SubTestEvent, OtherTestEvent, NestedTestEvent, OtherTestEventHandler
 from sirabus import generate_vhost_name
 from sirabus.servicebus.cloudevent_servicebus import (
     create_servicebus_for_amqp_cloudevent,
@@ -20,7 +19,14 @@ from sirabus.publisher.cloudevent_publisher import (
     create_publisher_for_memory_cloudevent,
 )
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
-from tests.features.steps.test_types import TestEvent, TestEventHandler
+from tests.features.steps.test_types import (
+    TestEvent,
+    TestEventHandler,
+    SubTestEvent,
+    OtherTestEvent,
+    NestedTestEvent,
+    OtherTestEventHandler,
+)
 
 use_step_matcher("re")
 
@@ -40,8 +46,10 @@ def step_impl1(context):
         "%2F" if params.virtual_host == "/" else params.virtual_host.strip("/")
     )
     context.connection_string = f"amqp://{creds.username}:{creds.password}@{params.host}:{params.port}/{virtual_host}"
-    context.handlers = [TestEventHandler(wait_handle=context.wait_handle),
-                        OtherTestEventHandler(wait_handle=context.wait_handle2)]
+    context.handlers = [
+        TestEventHandler(wait_handle=context.wait_handle),
+        OtherTestEventHandler(wait_handle=context.wait_handle2),
+    ]
 
 
 @given("a running in-memory message broker")
@@ -129,4 +137,6 @@ def step_impl7(context):
 
 @step("the other event handlers are not invoked")
 def step_impl8(context):
-    assert context.wait_handle2.is_set() is False, "The other event handler was invoked, but it should not have been"
+    assert context.wait_handle2.is_set() is False, (
+        "The other event handler was invoked, but it should not have been"
+    )

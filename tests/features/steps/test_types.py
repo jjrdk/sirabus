@@ -35,6 +35,7 @@ class TestEventHandler(IHandleEvents[TestEvent]):
         self.wait_handle.set()
         await asyncio.sleep(0)
 
+
 class OtherTestEventHandler(IHandleEvents[OtherTestEvent]):
     def __init__(self, wait_handle: threading.Event):
         self.wait_handle = wait_handle
