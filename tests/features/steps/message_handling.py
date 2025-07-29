@@ -64,7 +64,6 @@ def step_impl(context):
 def step_impl2(context):
     context.topic_map.add(Topic.get(TestEvent), TestEvent)
     context.topic_map.add(Topic.get(SubTestEvent), SubTestEvent)
-    context.topic_map.add(Topic.get(SubTestEvent), SubTestEvent)
     context.topic_map.add(Topic.get(OtherTestEvent), OtherTestEvent)
     context.topic_map.add(Topic.get(NestedTestEvent), NestedTestEvent)
 
