@@ -15,7 +15,7 @@ class ServiceBus(abc.ABC):
         message_reader: Callable[
             [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent]
         ],
-            handlers:List[IHandleEvents]
+        handlers: List[IHandleEvents],
     ) -> None:
         self._topic_map = topic_map
         self._message_reader = message_reader
@@ -34,6 +34,10 @@ class ServiceBus(abc.ABC):
         if not isinstance(event, BaseEvent):
             raise TypeError(f"Expected event of type BaseEvent, got {type(event)}")
         await asyncio.gather(
-            *[h.handle(event=event, headers=headers) for h in self._handlers],
+            *[
+                h.handle(event=event, headers=headers)
+                for h in self._handlers
+                if hasattr(type(h), "event_type") and isinstance(event, type(h).event_type)
+            ],
             return_exceptions=True,
         )

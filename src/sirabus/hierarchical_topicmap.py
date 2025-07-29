@@ -1,5 +1,5 @@
 import inspect
-from typing import Dict, Set, Self, Any, List, Iterable
+from typing import Dict, Set, Self, Any, Iterable
 
 from aett.eventstore import Topic, BaseEvent
 from pydantic import BaseModel
@@ -41,11 +41,16 @@ class HierarchicalTopicMap:
 
         return self
 
-    def _resolve_topics(self, t: type, prefix: str | None = None) -> Iterable[str]:
+    def _resolve_topics(self, t: type, suffix: str | None = None) -> str:
         topic = t.__topic__ if hasattr(t, "__topic__") else t.__name__
-        if t.__base__ and t.__base__ not in self.__excepted_bases__:
-            yield from self._resolve_topics(t.__base__, prefix)
-        yield topic if prefix is None else f"{prefix}.{topic}"
+        # yield topic if suffix is None else f"{topic}.{suffix}"
+        if any(tb for tb in t.__bases__ if tb not in self.__excepted_bases__):
+            tbase = self._resolve_topics(t.__bases__[0], suffix)
+            topic = (
+                f"{tbase}.{topic}" if suffix is None else f"{tbase}.{topic}.{suffix}"
+            )
+            return topic
+        return topic
 
     def register_module(self, module: object) -> Self:
         """
@@ -74,16 +79,9 @@ class HierarchicalTopicMap:
         """
         t = instance if isinstance(instance, type) else type(instance)
         if t in self.__topics.values():
-            n = list(self._resolve_topics(t))
-            return next(iter(n), None) if n else None
+            n = self._resolve_topics(t)
+            return n
         return None
-
-    def get_all(self) -> List[str]:
-        """
-        Gets all the topics and their corresponding classes in the map.
-        :return: A dictionary of all the topics and their classes.
-        """
-        return list(self.__topics.keys())
 
     def get_all_hierarchical_topics(self) -> Iterable[str]:
         """
@@ -91,4 +89,44 @@ class HierarchicalTopicMap:
         :return: A list of all the hierarchical topics.
         """
         for topic in self.__topics.values():
-            yield from self._resolve_topics(topic)
+            yield self._resolve_topics(topic)
+
+    def build_parent_child_relationships(self) -> Dict[str, Set[str]]:
+        """
+        Builds a list of parent-child relationships for the given topic.
+        :return: A list of parent-child relationships.
+        """
+
+        relationships: Dict[str, Set[str]] = {}
+
+        def visit(cls: type) -> None:
+            for base in cls.__bases__:
+                if base not in self.__excepted_bases__:
+                    parent_type = self.resolve_type(Topic.get(base))
+                    if not parent_type:
+                        raise RuntimeError(
+                            f"Base class '{base.__name__}' for '{cls.__name__}' not found in the topic map."
+                        )
+                    parent = self.get_hierarchical_topic(parent_type)
+                    if not parent:
+                        raise RuntimeError(
+                            f"Parent topic for class '{cls.__name__}' not found in the topic map."
+                        )
+                    child_type = self.resolve_type(Topic.get(cls))
+                    if not child_type:
+                        raise RuntimeError(
+                            f"Child class '{cls.__name__}' not found in the topic map."
+                        )
+                    child = self.get_hierarchical_topic(child_type)
+                    if not child:
+                        raise RuntimeError(
+                            f"Child topic for class '{cls.__name__}' not found in the topic map."
+                        )
+                    relationships.setdefault(parent, set()).add(child)
+                    visit(base)
+
+        for topic in self.__topics.values():
+            if any(t for t in topic.__bases__ if t in self.__excepted_bases__):
+                relationships.setdefault("amq.topic", set()).add(Topic.get(topic))
+            visit(topic)
+        return relationships

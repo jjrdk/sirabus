@@ -8,15 +8,16 @@ from aio_pika import Message
 from cloudevents.pydantic import CloudEvent
 from pydantic import BaseModel, Field
 
-from sirabus import IPublishEvents, TEvent, MessagePump
+from sirabus import IPublishEvents, TEvent
+from sirabus.message_pump import MessagePump
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 
 
-def create_cloud_event(event: TEvent, topic_map: HierarchicalTopicMap, logger) -> (str, str, str):
+def create_cloud_event(
+    event: TEvent, topic_map: HierarchicalTopicMap, logger
+) -> (str, str, str):
     if not isinstance(event, BaseEvent):
-        logger.exception(
-            f"{event} is not an instance of BaseEvent", exc_info=True
-        )
+        logger.exception(f"{event} is not an instance of BaseEvent", exc_info=True)
         raise TypeError(f"Expected event of type {type(TEvent)}, got {type(event)}")
     event_type = type(event)
     topic = Topic.get(event_type)
@@ -59,10 +60,10 @@ class AmqpCloudEventPublisher(IPublishEvents[TEvent]):
     """
 
     def __init__(
-            self,
-            amqp_url: str,
-            topic_map: HierarchicalTopicMap,
-            logger: logging.Logger | None = None,
+        self,
+        amqp_url: str,
+        topic_map: HierarchicalTopicMap,
+        logger: logging.Logger | None = None,
     ) -> None:
         self.__amqp_url = amqp_url
         self.__topic_map = topic_map
@@ -73,7 +74,9 @@ class AmqpCloudEventPublisher(IPublishEvents[TEvent]):
         Publishes the event to the configured topic.
         :param event: The event to publish.
         """
-        topic, hierarchical_topic, j = create_cloud_event(event, self.__topic_map, self.__logger)
+        topic, hierarchical_topic, j = create_cloud_event(
+            event, self.__topic_map, self.__logger
+        )
         connection = await aio_pika.connect_robust(url=self.__amqp_url)
         channel = await connection.channel()
         exchange = await channel.get_exchange(name="amq.topic", ensure=True)
@@ -93,10 +96,10 @@ class InMemoryCloudEventPublisher(IPublishEvents[TEvent]):
     """
 
     def __init__(
-            self,
-            topic_map: HierarchicalTopicMap,
-            messagepump: MessagePump,
-            logger: logging.Logger | None = None,
+        self,
+        topic_map: HierarchicalTopicMap,
+        messagepump: MessagePump,
+        logger: logging.Logger | None = None,
     ) -> None:
         self.__topic_map = topic_map
         self.__messagepump = messagepump
@@ -107,14 +110,15 @@ class InMemoryCloudEventPublisher(IPublishEvents[TEvent]):
         Publishes the event to the configured topic in memory.
         :param event: The event to publish.
         """
-        topic, hierarchical_topic, j = create_cloud_event(event, self.__topic_map, self.__logger)
-        self.__messagepump.publish(
-            ({'topic': topic}, j.encode()))
+        topic, hierarchical_topic, j = create_cloud_event(
+            event, self.__topic_map, self.__logger
+        )
+        self.__messagepump.publish(({"topic": topic}, j.encode()))
         await asyncio.sleep(0)
 
 
 def create_publisher_for_amqp_cloudevent(
-        amqp_url: str, topic_map: HierarchicalTopicMap, logger: logging.Logger | None = None
+    amqp_url: str, topic_map: HierarchicalTopicMap, logger: logging.Logger | None = None
 ) -> IPublishEvents[BaseEvent]:
     """
     Creates a CloudEventPublisher for AMQP.
@@ -123,11 +127,15 @@ def create_publisher_for_amqp_cloudevent(
     :param logger: Optional logger.
     :return: A CloudEventPublisher instance.
     """
-    return AmqpCloudEventPublisher(amqp_url=amqp_url, topic_map=topic_map, logger=logger)
+    return AmqpCloudEventPublisher(
+        amqp_url=amqp_url, topic_map=topic_map, logger=logger
+    )
 
 
 def create_publisher_for_memory_cloudevent(
-        topic_map: HierarchicalTopicMap, messagepump: MessagePump, logger: logging.Logger | None = None
+    topic_map: HierarchicalTopicMap,
+    messagepump: MessagePump,
+    logger: logging.Logger | None = None,
 ) -> IPublishEvents[BaseEvent]:
     """
     Creates a CloudEventPublisher for in-memory use.
@@ -135,4 +143,6 @@ def create_publisher_for_memory_cloudevent(
     :param logger: Optional logger.
     :return: A CloudEventPublisher instance.
     """
-    return InMemoryCloudEventPublisher(topic_map=topic_map, messagepump=messagepump, logger=logger)
+    return InMemoryCloudEventPublisher(
+        topic_map=topic_map, messagepump=messagepump, logger=logger
+    )

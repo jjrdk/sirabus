@@ -20,15 +20,15 @@ class AmqpServiceBus(ServiceBus):
     """
 
     def __init__(
-            self,
-            amqp_url: str,
-            topic_map: HierarchicalTopicMap,
-            handlers: List[IHandleEvents],
-            message_reader: Callable[
-                [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent]
-            ],
-            prefetch_count: int = 10,
-            logger: Optional[logging.Logger] = None,
+        self,
+        amqp_url: str,
+        topic_map: HierarchicalTopicMap,
+        handlers: List[IHandleEvents],
+        message_reader: Callable[
+            [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent]
+        ],
+        prefetch_count: int = 10,
+        logger: Optional[logging.Logger] = None,
     ) -> None:
         """Create a new instance of the consumer class, passing in the AMQP
         URL used to connect to RabbitMQ.
@@ -37,7 +37,9 @@ class AmqpServiceBus(ServiceBus):
         :param List[IHandleEvents] handlers: The list of event handlers to register.
         :param int prefetch_count: The number of messages to prefetch from RabbitMQ.
         """
-        super().__init__(message_reader=message_reader, topic_map=topic_map, handlers=handlers)
+        super().__init__(
+            message_reader=message_reader, topic_map=topic_map, handlers=handlers
+        )
         self.__handlers: List[IHandleEvents] = [handler for handler in handlers]
         self.__amqp_url = amqp_url
         self._topic_map = topic_map

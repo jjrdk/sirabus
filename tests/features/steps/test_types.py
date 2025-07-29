@@ -11,6 +11,21 @@ class TestEvent(BaseEvent):
     pass
 
 
+@Topic("test_sub")
+class SubTestEvent(TestEvent):
+    pass
+
+
+@Topic("nested")
+class NestedTestEvent(SubTestEvent):
+    pass
+
+
+@Topic("other")
+class OtherTestEvent(BaseEvent):
+    pass
+
+
 class TestEventHandler(IHandleEvents[TestEvent]):
     def __init__(self, wait_handle: threading.Event):
         self.wait_handle = wait_handle
@@ -18,4 +33,14 @@ class TestEventHandler(IHandleEvents[TestEvent]):
 
     async def handle(self, event: TEvent, headers: dict) -> None:
         self.wait_handle.set()
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0)
+
+
+class OtherTestEventHandler(IHandleEvents[OtherTestEvent]):
+    def __init__(self, wait_handle: threading.Event):
+        self.wait_handle = wait_handle
+        super().__init__()
+
+    async def handle(self, event: OtherTestEvent, headers: dict) -> None:
+        self.wait_handle.set()
+        await asyncio.sleep(0)
