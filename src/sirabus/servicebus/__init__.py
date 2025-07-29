@@ -10,12 +10,12 @@ from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 
 class ServiceBus(abc.ABC):
     def __init__(
-        self,
-        topic_map: HierarchicalTopicMap,
-        message_reader: Callable[
-            [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent]
-        ],
-        handlers: List[IHandleEvents],
+            self,
+            topic_map: HierarchicalTopicMap,
+            message_reader: Callable[
+                [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent]
+            ],
+            handlers: List[IHandleEvents],
     ) -> None:
         self._topic_map = topic_map
         self._message_reader = message_reader
@@ -34,6 +34,7 @@ class ServiceBus(abc.ABC):
         if not isinstance(event, BaseEvent):
             raise TypeError(f"Expected event of type BaseEvent, got {type(event)}")
         await asyncio.gather(
-            *[h.handle(event=event, headers=headers) for h in self._handlers],
+            *[h.handle(event=event, headers=headers) for h in self._handlers
+              if isinstance(event, type(h).event_type)],
             return_exceptions=True,
         )
