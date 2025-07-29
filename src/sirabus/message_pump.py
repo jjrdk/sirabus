@@ -66,7 +66,7 @@ class MessagePump:
                         ]
                     )
                 )
-                print(f"Processed message with headers: {headers} and body: {body}")
+                logging.info(f"Processed message with headers: {headers} and body: {body}")
             else:
                 time.sleep(0.1)
 
