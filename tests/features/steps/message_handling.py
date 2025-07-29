@@ -100,9 +100,10 @@ def step_impl4(context):
     logging.debug("Topography built.")
 
 
-@when("I send a message to the amqp service bus")
-def step_impl5(context):
-    event = TestEvent(
+@when("I send a (?P<topic>.+) message to the amqp service bus")
+def step_impl5(context, topic):
+    event_type = context.topic_map.resolve_type(topic)
+    event = event_type(
         source="test",
         timestamp=datetime.datetime.now(datetime.timezone.utc),
         correlation_id=str(uuid.uuid4()),
@@ -113,9 +114,10 @@ def step_impl5(context):
     context.async_runner.run_async(publisher.publish(event))
 
 
-@when("I send a message to the in-memory service bus")
-def step_impl6(context):
-    event = TestEvent(
+@when("I send a (?P<topic>.+) message to the in-memory service bus")
+def step_impl6(context, topic):
+    event_type = context.topic_map.resolve_type(topic)
+    event = event_type(
         source="test",
         timestamp=datetime.datetime.now(datetime.timezone.utc),
         correlation_id=str(uuid.uuid4()),
@@ -139,4 +141,11 @@ def step_impl7(context):
 def step_impl8(context):
     assert context.wait_handle2.is_set() is False, (
         "The other event handler was invoked, but it should not have been"
+    )
+
+
+@then("the messages are received by the subscriber")
+def step_impl9(context):
+    assert context.wait_handle2.is_set() and context.wait_handle.is_set(), (
+        "The message was not received by the subscriber in time"
     )
