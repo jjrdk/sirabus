@@ -2,6 +2,7 @@ import asyncio
 import threading
 
 from aett.eventstore import BaseEvent, Topic
+from aett.eventstore.base_command import BaseCommand
 
 from sirabus import TEvent, IHandleEvents
 
@@ -23,6 +24,10 @@ class NestedTestEvent(SubTestEvent):
 
 @Topic("other")
 class OtherTestEvent(BaseEvent):
+    pass
+
+@Topic("status")
+class StatusCommand(BaseCommand):
     pass
 
 

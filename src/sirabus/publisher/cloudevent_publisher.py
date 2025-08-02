@@ -33,7 +33,7 @@ class AmqpCloudEventPublisher(IPublishEvents[TEvent]):
         from sirabus.publisher import create_cloud_event
 
         topic, hierarchical_topic, j = create_cloud_event(
-            event, self.__topic_map, self.__logger
+            event, self.__topic_map
         )
         connection = await aio_pika.connect_robust(url=self.__amqp_url)
         channel = await connection.channel()
@@ -71,7 +71,7 @@ class InMemoryCloudEventPublisher(IPublishEvents[TEvent]):
         from sirabus.publisher import create_cloud_event
 
         topic, hierarchical_topic, j = create_cloud_event(
-            event, self.__topic_map, self.__logger
+            event, self.__topic_map
         )
         self.__messagepump.publish(({"topic": topic}, j.encode()))
         await asyncio.sleep(0)

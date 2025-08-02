@@ -1,5 +1,6 @@
 import abc
 import asyncio
+import logging
 import threading
 import time
 from queue import Queue
@@ -19,11 +20,12 @@ class MessageConsumer(abc.ABC):
 
 
 class MessagePump:
-    def __init__(self):
+    def __init__(self, logger: logging.Logger|None = None):
         self._consumers: Dict[UUID, MessageConsumer] = dict()
         self._messages: Queue[Tuple[dict, bytes]] = Queue()
         self._task = None
         self._stopped = False
+        self._logger = logger or logging.getLogger("MessagePump")
 
     def register_consumer(self, consumer: MessageConsumer) -> UUID:
         """
@@ -66,7 +68,7 @@ class MessagePump:
                         ]
                     )
                 )
-                logging.info(
+                self._logger.debug(
                     f"Processed message with headers: {headers} and body: {body}"
                 )
             else:

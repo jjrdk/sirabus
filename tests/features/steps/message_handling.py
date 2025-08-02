@@ -46,10 +46,6 @@ def step_impl1(context):
         "%2F" if params.virtual_host == "/" else params.virtual_host.strip("/")
     )
     context.connection_string = f"amqp://{creds.username}:{creds.password}@{params.host}:{params.port}/{virtual_host}"
-    context.handlers = [
-        TestEventHandler(wait_handle=context.wait_handle),
-        OtherTestEventHandler(wait_handle=context.wait_handle2),
-    ]
 
 
 @given("a running in-memory message broker")
@@ -74,11 +70,13 @@ def step_impl3(context):
         amqp_url=context.connection_string, topic_map=context.topic_map
     )
     context.async_runner.run_async(builder.build())
-
     bus = create_servicebus_for_amqp_cloudevent(
         amqp_url=context.connection_string,
         topic_map=context.topic_map,
-        handlers=context.handlers,
+        event_handlers=[
+        TestEventHandler(wait_handle=context.wait_handle),
+        OtherTestEventHandler(wait_handle=context.wait_handle2),
+    ],
     )
     context.consumer = bus
     context.async_runner.run_async(bus.run())

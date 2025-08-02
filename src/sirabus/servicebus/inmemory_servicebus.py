@@ -25,9 +25,6 @@ class InMemoryServiceBus(ServiceBus, MessageConsumer):
         self._message_pump = message_pump
         self._subscription = None
 
-    async def handle_message(self, headers: dict, body: bytes) -> None:
-        await self.handle_event(headers, body)
-
     async def run(self):
         if not self._subscription:
             self._subscription = self._message_pump.register_consumer(self)
