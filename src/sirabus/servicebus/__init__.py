@@ -1,22 +1,26 @@
 import abc
 import asyncio
+import logging
 from typing import Tuple, Callable, List
 
 from aett.eventstore import BaseEvent
+from aett.eventstore.base_command import BaseCommand
 
-from sirabus import IHandleEvents
+from sirabus import IHandleEvents, IHandleCommands, CommandResponse
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 
 
 class ServiceBus(abc.ABC):
     def __init__(
-        self,
-        topic_map: HierarchicalTopicMap,
-        message_reader: Callable[
-            [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent]
-        ],
-        handlers: List[IHandleEvents],
+            self,
+            topic_map: HierarchicalTopicMap,
+            message_reader: Callable[
+                [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent | BaseCommand]
+            ],
+            handlers: List[IHandleEvents | IHandleCommands],
+            logger: logging.Logger,
     ) -> None:
+        self._logger = logger
         self._topic_map = topic_map
         self._message_reader = message_reader
         self._handlers = handlers
@@ -29,16 +33,39 @@ class ServiceBus(abc.ABC):
     async def stop(self):
         raise NotImplementedError()
 
-    async def handle_event(self, headers: dict, body: bytes) -> None:
+    async def handle_message(self, headers: dict, body: bytes, correlation_id: str | None,
+                             reply_to: str | None) -> None:
         headers, event = self._message_reader(self._topic_map, headers, body)
-        if not isinstance(event, BaseEvent):
-            raise TypeError(f"Expected event of type BaseEvent, got {type(event)}")
+        if isinstance(event, BaseEvent):
+            await self.handle_event(event, headers)
+        elif isinstance(event, BaseCommand):
+            from aett.eventstore import Topic
+            command_handler = next(
+                (h for h in self._handlers if
+                 isinstance(h, IHandleCommands) and Topic.get(type(event)) == Topic.get(h.message_type)),
+                None
+            )
+            if not command_handler:
+                raise RuntimeError("No command handler found for command type: " + str(type(event)))
+            response = await command_handler.handle(command=event, headers=headers)
+            if not reply_to:
+                self._logger.error(
+                    f"Reply to field is empty for command {type(event)} with correlation ID {correlation_id}.")
+                return
+            await self.send_command_response(response=response, correlation_id=correlation_id, reply_to=reply_to)
+        else:
+            raise TypeError(f"Unexpected message type: {type(event)}")
+
+    async def handle_event(self, event: BaseEvent, headers: dict) -> None:
         await asyncio.gather(
             *[
                 h.handle(event=event, headers=headers)
                 for h in self._handlers
-                if hasattr(type(h), "event_type")
-                and isinstance(event, type(h).event_type)
+                if isinstance(h, IHandleEvents) and isinstance(event, type(h).message_type)
             ],
             return_exceptions=True,
         )
+
+    @abc.abstractmethod
+    async def send_command_response(self, response: CommandResponse, correlation_id: str | None, reply_to: str) -> None:
+        pass

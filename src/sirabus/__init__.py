@@ -1,3 +1,4 @@
+import asyncio
 from abc import ABC, abstractmethod
 from typing import Generic, Type, TypeVar, get_args, Optional
 
@@ -5,8 +6,8 @@ from aett.eventstore import BaseEvent, Topic
 from aett.eventstore.base_command import BaseCommand
 from pydantic import BaseModel, Field
 
-TEvent = TypeVar("TEvent", bound=BaseEvent, contravariant=True)
-TCommand = TypeVar("TCommand", bound=BaseCommand, contravariant=True)
+TEvent: TypeVar = TypeVar(name="TEvent", bound=BaseEvent, contravariant=True)
+TCommand: TypeVar = TypeVar(name="TCommand", bound=BaseCommand, contravariant=True)
 
 
 @Topic("command_response")
@@ -34,12 +35,34 @@ class IRouteCommands(ABC, Generic[TCommand]):
     """
 
     @abstractmethod
-    async def route(self, command: TCommand) -> CommandResponse:
+    async def route(self, command: TCommand) -> asyncio.Future[CommandResponse]:
         """
         Route a command.
 
         :param command: The command to route.
         :return: A CommandResponse indicating the success or failure of the command routing.
+        """
+        raise NotImplementedError("This method should be overridden by subclasses.")
+
+
+class IHandleCommands(ABC, Generic[TCommand]):
+    """
+    Interface for handling commands.
+    """
+
+    message_type: Type[TCommand]
+
+    def __init_subclass__(cls, **kwargs):
+        cls.message_type = get_args(cls.__orig_bases__[0])[0]
+
+    @abstractmethod
+    async def handle(self, command: TCommand, headers: dict) -> CommandResponse:
+        """
+        Handle a command.
+
+        :param command: The command to handle.
+        :param headers: Additional headers associated with the command.
+        :return: A CommandResponse indicating the success or failure of the command handling.
         """
         raise NotImplementedError("This method should be overridden by subclasses.")
 
@@ -64,10 +87,10 @@ class IHandleEvents(ABC, Generic[TEvent]):
     Interface for handling events.
     """
 
-    event_type: Type[TEvent]
+    message_type: Type[TEvent]
 
     def __init_subclass__(cls, **kwargs):
-        cls.event_type = get_args(cls.__orig_bases__[0])[0]
+        cls.message_type = get_args(cls.__orig_bases__[0])[0]
 
     @abstractmethod
     async def handle(self, event: TEvent, headers: dict) -> None:
