@@ -2,6 +2,7 @@ import asyncio
 import threading
 
 from aett.eventstore import BaseEvent, Topic
+from aett.eventstore.base_command import BaseCommand
 
 from sirabus import TEvent, IHandleEvents
 
@@ -26,8 +27,23 @@ class OtherTestEvent(BaseEvent):
     pass
 
 
+@Topic("get_status")
+class StatusCommand(BaseCommand):
+    pass
+
+
+@Topic("get_info")
+class InfoCommand(BaseCommand):
+    pass
+
+
+@Topic("invalid_command")
+class InvalidCommand(BaseCommand):
+    pass
+
+
 class TestEventHandler(IHandleEvents[TestEvent]):
-    def __init__(self, wait_handle: threading.Event):
+    def __init__(self, wait_handle: asyncio.Event):
         self.wait_handle = wait_handle
         super().__init__()
 

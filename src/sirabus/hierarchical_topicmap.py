@@ -2,7 +2,10 @@ import inspect
 from typing import Dict, Set, Self, Any, Iterable
 
 from aett.eventstore import Topic, BaseEvent
+from aett.eventstore.base_command import BaseCommand
 from pydantic import BaseModel
+
+from sirabus import CommandResponse
 
 
 class HierarchicalTopicMap:
@@ -12,7 +15,8 @@ class HierarchicalTopicMap:
 
     def __init__(self) -> None:
         self.__topics: Dict[str, type] = {}
-        self.__excepted_bases__: Set[type] = {object, BaseModel, BaseEvent}
+        self.__excepted_bases__: Set[type] = {object, BaseModel, BaseEvent, BaseCommand}
+        self.add(Topic.get(CommandResponse), CommandResponse)
 
     def add(self, topic: str, cls: type) -> Self:
         """

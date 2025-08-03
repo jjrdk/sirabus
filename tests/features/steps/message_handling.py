@@ -1,12 +1,12 @@
 import datetime
 import logging
-import threading
 import uuid
-
+import asyncio
 from aett.eventstore import Topic
 from behave import given, when, then, step, use_step_matcher
 from testcontainers.rabbitmq import RabbitMqContainer
 
+from tests.features.steps.command_handlers import StatusCommandHandler
 from sirabus import generate_vhost_name
 from sirabus.servicebus.cloudevent_servicebus import (
     create_servicebus_for_amqp_cloudevent,
@@ -14,10 +14,6 @@ from sirabus.servicebus.cloudevent_servicebus import (
 )
 from sirabus.message_pump import MessagePump
 from sirabus.topography import TopographyBuilder
-from sirabus.publisher.cloudevent_publisher import (
-    create_publisher_for_amqp_cloudevent,
-    create_publisher_for_memory_cloudevent,
-)
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 from tests.features.steps.test_types import (
     TestEvent,
@@ -34,8 +30,8 @@ use_step_matcher("re")
 @given("a running amqp message broker")
 def step_impl1(context):
     logging.basicConfig(level=logging.DEBUG)
-    context.wait_handle = threading.Event()
-    context.wait_handle2 = threading.Event()
+    context.wait_handle = asyncio.Event()
+    context.wait_handle2 = asyncio.Event()
     context.topic_map = HierarchicalTopicMap()
     container = RabbitMqContainer(vhost=generate_vhost_name("test", "0.0.0"))
     container.start()
@@ -46,18 +42,17 @@ def step_impl1(context):
         "%2F" if params.virtual_host == "/" else params.virtual_host.strip("/")
     )
     context.connection_string = f"amqp://{creds.username}:{creds.password}@{params.host}:{params.port}/{virtual_host}"
-    context.handlers = [
-        TestEventHandler(wait_handle=context.wait_handle),
-        OtherTestEventHandler(wait_handle=context.wait_handle2),
-    ]
 
 
 @given("a running in-memory message broker")
 def step_impl(context):
     logging.basicConfig(level=logging.DEBUG)
-    context.wait_handle = threading.Event()
+    context.wait_handle = asyncio.Event()
     context.topic_map = HierarchicalTopicMap()
-    context.handlers = [TestEventHandler(wait_handle=context.wait_handle)]
+    context.handlers = [
+        TestEventHandler(wait_handle=context.wait_handle),
+        StatusCommandHandler(),
+    ]
 
 
 @step("events have been registered in the hierarchical topic map")
@@ -74,11 +69,13 @@ def step_impl3(context):
         amqp_url=context.connection_string, topic_map=context.topic_map
     )
     context.async_runner.run_async(builder.build())
-
     bus = create_servicebus_for_amqp_cloudevent(
         amqp_url=context.connection_string,
         topic_map=context.topic_map,
-        handlers=context.handlers,
+        event_handlers=[
+            TestEventHandler(wait_handle=context.wait_handle),
+            OtherTestEventHandler(wait_handle=context.wait_handle2),
+        ],
     )
     context.consumer = bus
     context.async_runner.run_async(bus.run())
@@ -107,6 +104,10 @@ def step_impl5(context, topic):
         timestamp=datetime.datetime.now(datetime.timezone.utc),
         correlation_id=str(uuid.uuid4()),
     )
+    from sirabus.publisher.cloudevent_publisher import (
+        create_publisher_for_amqp_cloudevent,
+    )
+
     publisher = create_publisher_for_amqp_cloudevent(
         amqp_url=context.connection_string, topic_map=context.topic_map
     )
@@ -121,6 +122,10 @@ def step_impl6(context, topic):
         timestamp=datetime.datetime.now(datetime.timezone.utc),
         correlation_id=str(uuid.uuid4()),
     )
+    from sirabus.publisher.cloudevent_publisher import (
+        create_publisher_for_memory_cloudevent,
+    )
+
     publisher = create_publisher_for_memory_cloudevent(
         topic_map=context.topic_map, messagepump=context.messagepump
     )
@@ -130,7 +135,8 @@ def step_impl6(context, topic):
 @then("the message is received by the subscriber")
 def step_impl7(context):
     try:
-        result = context.wait_handle.wait(timeout=5)
+        context.async_runner.run_async(asyncio.sleep(1))
+        result = context.async_runner.run_async(context.wait_handle.wait())
         assert result, "The message was not received by the subscriber in time"
     finally:
         context.async_runner.run_async(context.consumer.stop())

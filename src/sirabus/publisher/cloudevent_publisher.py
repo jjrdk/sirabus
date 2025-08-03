@@ -1,57 +1,13 @@
 import asyncio
 import logging
-import uuid
 
 import aio_pika
-from aett.eventstore import BaseEvent, Topic
+from aett.eventstore import BaseEvent
 from aio_pika import Message
-from cloudevents.pydantic import CloudEvent
-from pydantic import BaseModel, Field
 
 from sirabus import IPublishEvents, TEvent
-from sirabus.message_pump import MessagePump
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
-
-
-def create_cloud_event(
-    event: TEvent, topic_map: HierarchicalTopicMap, logger
-) -> (str, str, str):
-    if not isinstance(event, BaseEvent):
-        logger.exception(f"{event} is not an instance of BaseEvent", exc_info=True)
-        raise TypeError(f"Expected event of type {type(TEvent)}, got {type(event)}")
-    event_type = type(event)
-    topic = Topic.get(event_type)
-    hierarchical_topic = topic_map.get_hierarchical_topic(event_type)
-
-    if not hierarchical_topic:
-        raise ValueError(
-            f"Topic for event type {event_type} not found in hierarchical_topic map."
-        )
-    a = CloudEventAttributes(
-        id=str(uuid.uuid4()),
-        specversion="1.0",
-        datacontenttype="application/json",
-        time=event.timestamp.isoformat(),
-        source=event.source,
-        subject=topic,
-        type=hierarchical_topic or topic,
-    )
-    ce = CloudEvent(
-        attributes=a.model_dump(),
-        data=event.model_dump(mode="json"),
-    )
-    j = ce.model_dump_json()
-    return topic, hierarchical_topic, j
-
-
-class CloudEventAttributes(BaseModel):
-    id: str = Field(default=str(uuid.uuid4()))
-    specversion: str = Field(default="1.0")
-    datacontenttype: str = Field(default="application/json")
-    time: str = Field()
-    source: str = Field()
-    subject: str = Field()
-    type: str = Field()
+from sirabus.message_pump import MessagePump
 
 
 class AmqpCloudEventPublisher(IPublishEvents[TEvent]):
@@ -74,9 +30,10 @@ class AmqpCloudEventPublisher(IPublishEvents[TEvent]):
         Publishes the event to the configured topic.
         :param event: The event to publish.
         """
-        topic, hierarchical_topic, j = create_cloud_event(
-            event, self.__topic_map, self.__logger
-        )
+        from sirabus.publisher import create_cloud_event
+
+        topic, hierarchical_topic, j = create_cloud_event(event, self.__topic_map)
+
         connection = await aio_pika.connect_robust(url=self.__amqp_url)
         channel = await connection.channel()
         exchange = await channel.get_exchange(name="amq.topic", ensure=True)
@@ -110,9 +67,9 @@ class InMemoryCloudEventPublisher(IPublishEvents[TEvent]):
         Publishes the event to the configured topic in memory.
         :param event: The event to publish.
         """
-        topic, hierarchical_topic, j = create_cloud_event(
-            event, self.__topic_map, self.__logger
-        )
+        from sirabus.publisher import create_cloud_event
+
+        topic, hierarchical_topic, j = create_cloud_event(event, self.__topic_map)
         self.__messagepump.publish(({"topic": topic}, j.encode()))
         await asyncio.sleep(0)
 
@@ -140,6 +97,7 @@ def create_publisher_for_memory_cloudevent(
     """
     Creates a CloudEventPublisher for in-memory use.
     :param topic_map: The hierarchical topic map.
+    :param messagepump: The message pump for in-memory publishing.
     :param logger: Optional logger.
     :return: A CloudEventPublisher instance.
     """

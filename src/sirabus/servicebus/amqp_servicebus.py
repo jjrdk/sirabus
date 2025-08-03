@@ -9,7 +9,7 @@ from aio_pika.abc import (
     AbstractRobustChannel,
 )
 
-from sirabus import IHandleEvents
+from sirabus import IHandleEvents, IHandleCommands, CommandResponse
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 from sirabus.servicebus import ServiceBus
 
@@ -23,10 +23,11 @@ class AmqpServiceBus(ServiceBus):
         self,
         amqp_url: str,
         topic_map: HierarchicalTopicMap,
-        handlers: List[IHandleEvents],
+        handlers: List[IHandleEvents | IHandleCommands],
         message_reader: Callable[
             [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent]
         ],
+        command_response_writer: Callable[[CommandResponse], Tuple[str, bytes]],
         prefetch_count: int = 10,
         logger: Optional[logging.Logger] = None,
     ) -> None:
@@ -38,9 +39,12 @@ class AmqpServiceBus(ServiceBus):
         :param int prefetch_count: The number of messages to prefetch from RabbitMQ.
         """
         super().__init__(
-            message_reader=message_reader, topic_map=topic_map, handlers=handlers
+            message_reader=message_reader,
+            topic_map=topic_map,
+            handlers=handlers,
+            logger=logger,
         )
-        self.__handlers: List[IHandleEvents] = [handler for handler in handlers]
+        self.__command_response_writer = command_response_writer
         self.__amqp_url = amqp_url
         self._topic_map = topic_map
         self._prefetch_count = prefetch_count
@@ -48,9 +52,9 @@ class AmqpServiceBus(ServiceBus):
         self.__topics = set(
             topic
             for topic in (
-                self._topic_map.get_hierarchical_topic(type(handler).event_type)
+                self._topic_map.get_hierarchical_topic(type(handler).message_type)
                 for handler in handlers
-                if isinstance(handler, IHandleEvents)
+                if isinstance(handler, (IHandleEvents, IHandleCommands))
             )
             if topic is not None
         )
@@ -61,22 +65,24 @@ class AmqpServiceBus(ServiceBus):
 
     async def __inner_handle_message(self, msg: AbstractIncomingMessage):
         try:
-            await self.handle_event(msg.headers, msg.body)
+            await self.handle_message(
+                msg.headers, msg.body, msg.correlation_id, msg.reply_to
+            )
             await msg.ack()
         except Exception as e:
-            logging.exception("Exception while handling message", exc_info=e)
+            self._logger.exception("Exception while handling message", exc_info=e)
             await msg.nack(requeue=True)
 
     async def run(self):
-        logging.debug("Starting service bus")
+        self._logger.debug("Starting service bus")
         self.__connection = await aio_pika.connect_robust(url=self.__amqp_url)
         self.__channel = await self.__connection.channel()
         await self.__channel.set_qos(prefetch_count=self._prefetch_count)
-        logging.debug("Channel opened for consuming messages.")
+        self._logger.debug("Channel opened for consuming messages.")
         queue = await self.__channel.declare_queue(self.__queue_name, exclusive=True)
         for topic in self.__topics:
             await queue.bind(exchange=topic, routing_key=topic)
-            logging.debug(f"Queue {self.__queue_name} bound to topic {topic}.")
+            self._logger.debug(f"Queue {self.__queue_name} bound to topic {topic}.")
         self.__consumer_tag = await queue.consume(callback=self.__inner_handle_message)
 
     async def stop(self):
@@ -85,6 +91,25 @@ class AmqpServiceBus(ServiceBus):
             await queue.cancel(self.__consumer_tag)
             await self.__channel.close()
             await self.__connection.close()
+
+    async def send_command_response(
+        self, response: CommandResponse, correlation_id: str | None, reply_to: str
+    ):
+        if not self.__channel or self.__channel.is_closed:
+            return
+        topic, j = self.__command_response_writer(response)
+        await self.__channel.default_exchange.publish(
+            aio_pika.Message(
+                body=j,
+                correlation_id=correlation_id,
+                content_type="application/json",
+                content_encoding="utf-8",
+            ),
+            routing_key=reply_to,
+        )
+        self._logger.debug(
+            f"Response published to {reply_to} with correlation_id {correlation_id}."
+        )
 
     @staticmethod
     def _get_consumer_queue_name(topics: Set[str]) -> str:
