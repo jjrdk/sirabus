@@ -8,7 +8,7 @@ authors = [
 ]
 requires-python = ">=3.11"
 dependencies = [
-    "aett>=3.3",
+    "aett>=3.3.0",
 ]
 
 [project.optional-dependencies]

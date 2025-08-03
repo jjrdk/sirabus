@@ -49,7 +49,7 @@ class InMemoryServiceBus(ServiceBus, MessageConsumer):
         self, response: CommandResponse, correlation_id: str | None, reply_to: str
     ) -> None:
         topic, message = self._response_writer(response)
-        headers = {"topic": topic, 'reply_to': reply_to}
+        headers = {"topic": topic, "reply_to": reply_to}
         if correlation_id:
             headers["correlation_id"] = correlation_id
         self._message_pump.publish((headers, message))

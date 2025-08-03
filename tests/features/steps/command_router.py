@@ -128,8 +128,8 @@ def step_impl7(context, msg1, msg2):
 
     future1 = context.future1
     future1.add_done_callback(callback1)
-    future1 = context.future2
-    future1.add_done_callback(callback2)
+    future2 = context.future2
+    future2.add_done_callback(callback2)
     assert context.async_runner.run_async(context.wait_handle.wait()), (
         "Timeout waiting for first command response"
     )
