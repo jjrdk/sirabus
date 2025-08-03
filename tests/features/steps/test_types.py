@@ -26,8 +26,19 @@ class NestedTestEvent(SubTestEvent):
 class OtherTestEvent(BaseEvent):
     pass
 
-@Topic("status")
+
+@Topic("get_status")
 class StatusCommand(BaseCommand):
+    pass
+
+
+@Topic("get_info")
+class InfoCommand(BaseCommand):
+    pass
+
+
+@Topic("invalid_command")
+class InvalidCommand(BaseCommand):
     pass
 
 

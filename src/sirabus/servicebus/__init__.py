@@ -46,7 +46,18 @@ class ServiceBus(abc.ABC):
                 None
             )
             if not command_handler:
-                raise RuntimeError("No command handler found for command type: " + str(type(event)))
+                if not reply_to:
+                    self._logger.error(
+                        f"No command handler found for command {type(event)} with correlation ID {correlation_id} "
+                        f"and no reply_to field provided."
+                    )
+                    return
+                await self.send_command_response(
+                    response=CommandResponse(success=False, message="unknown command"),
+                    correlation_id=correlation_id,
+                    reply_to=reply_to
+                )
+                return
             response = await command_handler.handle(command=event, headers=headers)
             if not reply_to:
                 self._logger.error(
