@@ -17,4 +17,3 @@ async def after_scenario(context, _):
             container.stop()
         except Exception as e:
             logging.debug(f"Error stopping container {container}: {e}")
-    context.async_runner.close()

@@ -70,17 +70,6 @@ class AmqpCommandRouter(IRouteCommands, abc.ABC):
         future.set_result(response)
         await channel.close()
 
-    async def __aenter__(self):
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        for future, channel in self.__inflight.values():
-            if not future.done():
-                future.cancel("Command routing was cancelled due to shutdown.")
-            if not channel.is_closed:
-                await channel.close()
-        await self.__connection.close()
-
     @abc.abstractmethod
     def _create_message(
             self, command: TCommand, response_queue: str

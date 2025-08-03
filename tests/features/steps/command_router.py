@@ -6,8 +6,8 @@ from datetime import datetime, timezone
 from aett.eventstore import Topic
 from behave import step, when, then, use_step_matcher
 
-from features.steps.command_handlers import StatusCommandHandler, InfoCommandHandler
-from features.steps.test_types import StatusCommand, InvalidCommand, InfoCommand
+from steps.command_handlers import StatusCommandHandler, InfoCommandHandler
+from steps.test_types import StatusCommand, InvalidCommand, InfoCommand
 from sirabus.publisher.cloudevent_router import CloudEventRouter
 from sirabus.servicebus.cloudevent_servicebus import create_servicebus_for_amqp_cloudevent
 from sirabus.topography import TopographyBuilder
@@ -30,7 +30,6 @@ def step_impl3(context):
     )
     context.consumer = bus
     context.async_runner.run_async(bus.run())
-    logging.debug("Topography built.")
 
 
 @step("commands have been registered in the hierarchical topic map")

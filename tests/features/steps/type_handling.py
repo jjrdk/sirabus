@@ -14,7 +14,7 @@ def step_impl1(context):
 
 @when("I resolve the event type for the handler")
 def step_impl2(context):
-    context.event_type = type(context.instance).event_type
+    context.event_type = type(context.instance).message_type
 
 
 @then("the event type is resolved correctly")
