@@ -28,7 +28,7 @@ def _transform_cloudevent_message(
 def create_servicebus_for_amqp_cloudevent(
     amqp_url: str,
     topic_map: HierarchicalTopicMap,
-    event_handlers: List[IHandleEvents | IHandleCommands],
+    handlers: List[IHandleEvents | IHandleCommands],
     prefetch_count: int = 10,
 ) -> ServiceBus:
     from sirabus.servicebus.amqp_servicebus import AmqpServiceBus
@@ -38,7 +38,7 @@ def create_servicebus_for_amqp_cloudevent(
     return AmqpServiceBus(
         amqp_url=amqp_url,
         topic_map=topic_map,
-        handlers=event_handlers,
+        handlers=handlers,
         prefetch_count=prefetch_count,
         message_reader=_transform_cloudevent_message,
         command_response_writer=create_cloud_command_response,

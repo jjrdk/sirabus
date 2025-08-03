@@ -72,7 +72,7 @@ def step_impl3(context):
     bus = create_servicebus_for_amqp_cloudevent(
         amqp_url=context.connection_string,
         topic_map=context.topic_map,
-        event_handlers=[
+        handlers=[
             TestEventHandler(wait_handle=context.wait_handle),
             OtherTestEventHandler(wait_handle=context.wait_handle2),
         ],

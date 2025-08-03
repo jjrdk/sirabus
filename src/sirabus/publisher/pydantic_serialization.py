@@ -54,7 +54,7 @@ def create_command_response(
     command_response: CommandResponse,
 ) -> Tuple[str, bytes]:
     topic = Topic.get(type(command_response))
-    j = command.model_dump_json().encode()
+    j = command_response.model_dump_json().encode()
     return topic, j
 
 
