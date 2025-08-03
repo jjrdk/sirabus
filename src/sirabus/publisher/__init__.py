@@ -8,14 +8,10 @@ from pydantic import BaseModel, Field
 
 from sirabus import TEvent, TCommand, CommandResponse
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
-from sirabus.publisher.cloudevent_publisher import (
-    create_publisher_for_amqp_cloudevent,
-    create_publisher_for_memory_cloudevent,
-)
 
 
 def create_cloud_event(
-        event: TEvent, topic_map: HierarchicalTopicMap
+    event: TEvent, topic_map: HierarchicalTopicMap
 ) -> Tuple[str, str, str]:
     event_type = type(event)
     topic = Topic.get(event_type)
@@ -32,7 +28,7 @@ def create_cloud_event(
         time=event.timestamp.isoformat(),
         source=event.source,
         subject=topic,
-        type=hierarchical_topic or topic
+        type=hierarchical_topic or topic,
     )
     ce = CloudEvent.create(
         attributes=a.model_dump(exclude_none=True),
@@ -43,7 +39,7 @@ def create_cloud_event(
 
 
 def create_cloud_command(
-        command: TCommand, topic_map: HierarchicalTopicMap, reply_to: str
+    command: TCommand, topic_map: HierarchicalTopicMap, reply_to: str
 ) -> Tuple[str, str, str]:
     command_type = type(command)
     topic = Topic.get(command_type)
@@ -61,7 +57,7 @@ def create_cloud_command(
         source=command.aggregate_id,
         subject=topic,
         type=hierarchical_topic or topic,
-        reply_to=reply_to
+        reply_to=reply_to,
     )
     ce = CloudEvent.create(
         attributes=a.model_dump(exclude_none=True),
@@ -71,7 +67,9 @@ def create_cloud_command(
     return topic, hierarchical_topic, j
 
 
-def create_cloud_command_response(command_response: CommandResponse) -> Tuple[str, bytes]:
+def create_cloud_command_response(
+    command_response: CommandResponse,
+) -> Tuple[str, bytes]:
     topic = Topic.get(type(command_response))
     a = CloudEventAttributes(
         id=str(uuid.uuid4()),
@@ -80,7 +78,7 @@ def create_cloud_command_response(command_response: CommandResponse) -> Tuple[st
         time=datetime.datetime.now(datetime.timezone.utc).isoformat(),
         source="sirabus",
         subject=topic,
-        type=topic
+        type=topic,
     )
     ce = CloudEvent.create(
         attributes=a.model_dump(exclude_none=True),

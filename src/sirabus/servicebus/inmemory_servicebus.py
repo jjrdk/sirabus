@@ -13,17 +13,20 @@ from sirabus.servicebus import ServiceBus
 
 class InMemoryServiceBus(ServiceBus, MessageConsumer):
     def __init__(
-            self,
-            topic_map: HierarchicalTopicMap,
-            message_reader: Callable[
-                [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent|BaseCommand]
-            ],
-            handlers: List[IHandleEvents | IHandleCommands],
-            message_pump: MessagePump,
-            logger: logging.Logger,
+        self,
+        topic_map: HierarchicalTopicMap,
+        message_reader: Callable[
+            [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent | BaseCommand]
+        ],
+        handlers: List[IHandleEvents | IHandleCommands],
+        message_pump: MessagePump,
+        logger: logging.Logger,
     ) -> None:
         super().__init__(
-            topic_map=topic_map, message_reader=message_reader, handlers=handlers, logger=logger
+            topic_map=topic_map,
+            message_reader=message_reader,
+            handlers=handlers,
+            logger=logger,
         )
         self._message_pump = message_pump
         self._subscription = None
@@ -38,5 +41,7 @@ class InMemoryServiceBus(ServiceBus, MessageConsumer):
             self._message_pump.unregister_consumer(self._subscription)
         await asyncio.sleep(0)
 
-    async def send_command_response(self, response: CommandResponse, correlation_id: str | None, reply_to: str) -> None:
+    async def send_command_response(
+        self, response: CommandResponse, correlation_id: str | None, reply_to: str
+    ) -> None:
         pass

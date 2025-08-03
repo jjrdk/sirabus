@@ -10,8 +10,13 @@ from uuid import UUID, uuid4
 
 class MessageConsumer(abc.ABC):
     @abc.abstractmethod
-    async def handle_message(self, headers: dict, body: bytes, correlation_id: str | None,
-                             reply_to: str | None) -> None:
+    async def handle_message(
+        self,
+        headers: dict,
+        body: bytes,
+        correlation_id: str | None,
+        reply_to: str | None,
+    ) -> None:
         """
         Handle a message with the given headers and body.
         :param headers: The message headers.

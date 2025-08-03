@@ -13,10 +13,6 @@ from sirabus.servicebus.cloudevent_servicebus import (
 )
 from sirabus.message_pump import MessagePump
 from sirabus.topography import TopographyBuilder
-from sirabus.publisher import (
-    create_publisher_for_amqp_cloudevent,
-    create_publisher_for_memory_cloudevent,
-)
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 from tests.features.steps.test_types import (
     TestEvent,
@@ -104,6 +100,7 @@ def step_impl5(context, topic):
         timestamp=datetime.datetime.now(datetime.timezone.utc),
         correlation_id=str(uuid.uuid4()),
     )
+    from sirabus.publisher.cloudevent_publisher import create_publisher_for_amqp_cloudevent
     publisher = create_publisher_for_amqp_cloudevent(
         amqp_url=context.connection_string, topic_map=context.topic_map
     )
@@ -118,6 +115,7 @@ def step_impl6(context, topic):
         timestamp=datetime.datetime.now(datetime.timezone.utc),
         correlation_id=str(uuid.uuid4()),
     )
+    from sirabus.publisher.cloudevent_publisher import create_publisher_for_memory_cloudevent
     publisher = create_publisher_for_memory_cloudevent(
         topic_map=context.topic_map, messagepump=context.messagepump
     )

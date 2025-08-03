@@ -5,7 +5,12 @@ import uuid
 from typing import Dict, Tuple, Optional
 
 from aio_pika import Message, connect_robust
-from aio_pika.abc import AbstractQueue, AbstractIncomingMessage, AbstractRobustConnection, AbstractChannel
+from aio_pika.abc import (
+    AbstractQueue,
+    AbstractIncomingMessage,
+    AbstractRobustConnection,
+    AbstractChannel,
+)
 from cloudevents.pydantic import CloudEvent
 
 from sirabus import IRouteCommands, TCommand, CommandResponse
@@ -14,12 +19,14 @@ from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 
 class AmqpCommandRouter(IRouteCommands, abc.ABC):
     def __init__(
-            self,
-            amqp_url: str,
-            topic_map: HierarchicalTopicMap,
-            logger: logging.Logger | None = None,
+        self,
+        amqp_url: str,
+        topic_map: HierarchicalTopicMap,
+        logger: logging.Logger | None = None,
     ) -> None:
-        self.__inflight: Dict[str, Tuple[asyncio.Future[CommandResponse], AbstractChannel]] = {}
+        self.__inflight: Dict[
+            str, Tuple[asyncio.Future[CommandResponse], AbstractChannel]
+        ] = {}
         self.__amqp_url = amqp_url
         self.__connection: Optional[AbstractRobustConnection] = None
         self._topic_map = topic_map
@@ -39,21 +46,27 @@ class AmqpCommandRouter(IRouteCommands, abc.ABC):
         )
         consume_tag = await response_queue.consume(callback=self._consume_queue)
         try:
-            topic, hierarchical_topic, j = self._create_message(command, response_queue=response_queue.name)
+            topic, hierarchical_topic, j = self._create_message(
+                command, response_queue=response_queue.name
+            )
         except ValueError as ve:
-            self._logger.exception(f"Error creating message for command {command}: {ve}")
-            future =loop.create_future()
+            self._logger.exception(
+                f"Error creating message for command {command}: {ve}"
+            )
+            future = loop.create_future()
             future.set_result(CommandResponse(success=False, message="unknown command"))
             return future
         exchange = await channel.get_exchange(name="amq.topic", ensure=False)
         self._logger.debug("Channel opened for publishing CloudEvent.")
         response = await exchange.publish(
-            message=Message(body=j.encode(),
-                            headers={"topic": topic},
-                            correlation_id=command.correlation_id,
-                            content_encoding="utf-8",
-                            content_type="application/json",
-                            reply_to=response_queue.name),
+            message=Message(
+                body=j.encode(),
+                headers={"topic": topic},
+                correlation_id=command.correlation_id,
+                content_encoding="utf-8",
+                content_type="application/json",
+                reply_to=response_queue.name,
+            ),
             routing_key=hierarchical_topic,
         )
         self._logger.debug(f"Published {response}")
@@ -63,7 +76,9 @@ class AmqpCommandRouter(IRouteCommands, abc.ABC):
 
     async def _consume_queue(self, msg: AbstractIncomingMessage) -> None:
         if msg.consumer_tag is None:
-            self._logger.error("Message received without consumer tag, cannot process response.")
+            self._logger.error(
+                "Message received without consumer tag, cannot process response."
+            )
             return
         future, channel = self.__inflight[msg.consumer_tag]
         response = self._read_response(msg)
@@ -72,7 +87,7 @@ class AmqpCommandRouter(IRouteCommands, abc.ABC):
 
     @abc.abstractmethod
     def _create_message(
-            self, command: TCommand, response_queue: str
+        self, command: TCommand, response_queue: str
     ) -> Tuple[str, str, str]:
         """
         Create a message to be sent over the AMQP channel.
@@ -82,18 +97,25 @@ class AmqpCommandRouter(IRouteCommands, abc.ABC):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _read_response(self, response_msg: AbstractIncomingMessage | None) -> CommandResponse:
+    def _read_response(
+        self, response_msg: AbstractIncomingMessage | None
+    ) -> CommandResponse:
         raise NotImplementedError()
 
 
 class CloudEventRouter(AmqpCommandRouter):
-    def _create_message(self, command: TCommand, response_queue: str) -> Tuple[str, str, str]:
+    def _create_message(
+        self, command: TCommand, response_queue: str
+    ) -> Tuple[str, str, str]:
         from sirabus.publisher import create_cloud_command
+
         return create_cloud_command(
             command=command, topic_map=self._topic_map, reply_to=response_queue
         )
 
-    def _read_response(self, response_msg: AbstractIncomingMessage | None) -> CommandResponse:
+    def _read_response(
+        self, response_msg: AbstractIncomingMessage | None
+    ) -> CommandResponse:
         """
         Reads the response message and returns a CommandResponse.
         :param response_msg: The response message received from the command.

@@ -6,7 +6,7 @@ from aett.eventstore import BaseEvent
 from aio_pika.abc import (
     AbstractIncomingMessage,
     AbstractRobustConnection,
-    AbstractRobustChannel, AbstractQueue,
+    AbstractRobustChannel,
 )
 
 from sirabus import IHandleEvents, IHandleCommands, CommandResponse
@@ -20,16 +20,16 @@ class AmqpServiceBus(ServiceBus):
     """
 
     def __init__(
-            self,
-            amqp_url: str,
-            topic_map: HierarchicalTopicMap,
-            handlers: List[IHandleEvents | IHandleCommands],
-            message_reader: Callable[
-                [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent]
-            ],
-            command_response_writer: Callable[[CommandResponse], Tuple[str, bytes]],
-            prefetch_count: int = 10,
-            logger: Optional[logging.Logger] = None,
+        self,
+        amqp_url: str,
+        topic_map: HierarchicalTopicMap,
+        handlers: List[IHandleEvents | IHandleCommands],
+        message_reader: Callable[
+            [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent]
+        ],
+        command_response_writer: Callable[[CommandResponse], Tuple[str, bytes]],
+        prefetch_count: int = 10,
+        logger: Optional[logging.Logger] = None,
     ) -> None:
         """Create a new instance of the consumer class, passing in the AMQP
         URL used to connect to RabbitMQ.
@@ -65,7 +65,9 @@ class AmqpServiceBus(ServiceBus):
 
     async def __inner_handle_message(self, msg: AbstractIncomingMessage):
         try:
-            await self.handle_message(msg.headers, msg.body, msg.correlation_id, msg.reply_to)
+            await self.handle_message(
+                msg.headers, msg.body, msg.correlation_id, msg.reply_to
+            )
             await msg.ack()
         except Exception as e:
             self._logger.exception("Exception while handling message", exc_info=e)
@@ -90,7 +92,9 @@ class AmqpServiceBus(ServiceBus):
             await self.__channel.close()
             await self.__connection.close()
 
-    async def send_command_response(self, response: CommandResponse, correlation_id: str | None, reply_to: str):
+    async def send_command_response(
+        self, response: CommandResponse, correlation_id: str | None, reply_to: str
+    ):
         if not self.__channel or self.__channel.is_closed:
             return
         topic, j = self.__command_response_writer(response)
