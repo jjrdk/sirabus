@@ -1,36 +1,37 @@
-from typing import Tuple
+import logging
+from typing import Optional
 
-from aio_pika.abc import (
-    AbstractIncomingMessage,
-)
-
-from sirabus import TCommand, CommandResponse
+from sirabus import IRouteCommands
+from sirabus.hierarchical_topicmap import HierarchicalTopicMap
+from sirabus.message_pump import MessagePump
 from sirabus.publisher.amqp_command_router import AmqpCommandRouter
+from sirabus.publisher.cloudevent_serialization import read_cloud_command_response
 
 
-class CloudEventRouter(AmqpCommandRouter):
-    def _create_message(
-        self, command: TCommand, response_queue: str
-    ) -> Tuple[str, str, str]:
-        from sirabus.publisher import create_cloud_command
+def create_amqp_router(
+        amqp_url: str,
+        topic_map: HierarchicalTopicMap,
+        logger: Optional[logging.Logger] = None,
+) -> IRouteCommands:
+    from sirabus.publisher.cloudevent_serialization import create_cloud_command
+    return AmqpCommandRouter(
+        amqp_url=amqp_url,
+        topic_map=topic_map,
+        logger=logger,
+        message_writer=create_cloud_command,
+        response_reader=read_cloud_command_response)
 
-        return create_cloud_command(
-            command=command, topic_map=self._topic_map
-        )
 
-    def _read_amqp_response(
-        self, response_msg: AbstractIncomingMessage
-    ) -> CommandResponse:
-        """
-        Reads the response message and returns a CommandResponse.
-        :param response_msg: The response message received from the command.
-        :return: A CommandResponse indicating the success or failure of the command routing.
-        """
-        try:
-            from cloudevents.pydantic import CloudEvent
-
-            cloud_event = CloudEvent.model_validate_json(response_msg.body)
-            return CommandResponse.model_validate(cloud_event.data)
-        except Exception as e:
-            self._logger.exception(f"Error processing response: {e}", exc_info=e)
-            return CommandResponse(success=False, message=str(e))
+def create_inmemory_router(
+        message_pump: MessagePump,
+        topic_map: HierarchicalTopicMap,
+        logger: Optional[logging.Logger] = None,
+) -> IRouteCommands:
+    from sirabus.publisher.cloudevent_serialization import create_cloud_command, read_cloud_command_response
+    from sirabus.publisher.inmemory_command_router import InMemoryCommandRouter
+    return InMemoryCommandRouter(
+        message_pump=message_pump,
+        topic_map=topic_map,
+        logger=logger,
+        command_writer=create_cloud_command,
+        response_reader=read_cloud_command_response)

@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import uuid
 from datetime import datetime, timezone
 
@@ -7,8 +8,7 @@ from behave import step, when, then, use_step_matcher
 from steps.command_handlers import StatusCommandHandler, InfoCommandHandler
 from steps.test_types import StatusCommand, InvalidCommand, InfoCommand
 
-from sirabus.publisher.cloudevent_router import CloudEventRouter
-from sirabus.publisher.inmemory_command_router import InMemoryCommandRouter
+from sirabus.publisher.cloudevent_router import create_amqp_router, create_inmemory_router
 from sirabus.servicebus.cloudevent_servicebus import (
     create_servicebus_for_amqp_cloudevent,
 )
@@ -17,7 +17,7 @@ from sirabus.topography import TopographyBuilder
 use_step_matcher("re")
 
 
-@step("amqp router is configured with the hierarchical topic map")
+@step("a cloudevent amqp router is configured with the hierarchical topic map")
 def step_impl1(context):
     builder = TopographyBuilder(
         amqp_url=context.connection_string, topic_map=context.topic_map
@@ -39,7 +39,7 @@ def step_impl1(context):
 def step_impl2(context):
     context.topic_map.add(Topic.get(StatusCommand), StatusCommand)
     context.topic_map.add(Topic.get(InfoCommand), InfoCommand)
-    context.router = CloudEventRouter(
+    context.router = create_amqp_router(
         amqp_url=context.connection_string,
         topic_map=context.topic_map,
     )
@@ -49,13 +49,11 @@ def step_impl2(context):
 def step_impl3(context):
     context.topic_map.add(Topic.get(StatusCommand), StatusCommand)
     context.topic_map.add(Topic.get(InfoCommand), InfoCommand)
-    from sirabus.publisher import create_cloud_command, read_cloud_command_response
 
-    context.router = InMemoryCommandRouter(
+    context.router = create_inmemory_router(
         message_pump=context.messagepump,
         topic_map=context.topic_map,
-        command_writer=create_cloud_command,
-        response_reader=read_cloud_command_response,
+        logger=logging.getLogger("test")
     )
 
 

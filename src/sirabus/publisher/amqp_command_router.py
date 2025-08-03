@@ -2,8 +2,9 @@ import abc
 import asyncio
 import logging
 import uuid
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple, Optional, Callable
 
+from aett.eventstore.base_command import BaseCommand
 from aio_pika import connect_robust, Message
 from aio_pika.abc import (
     AbstractChannel,
@@ -16,13 +17,17 @@ from sirabus import CommandResponse, TCommand, IRouteCommands
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 
 
-class AmqpCommandRouter(IRouteCommands, abc.ABC):
+class AmqpCommandRouter(IRouteCommands):
     def __init__(
-        self,
-        amqp_url: str,
-        topic_map: HierarchicalTopicMap,
-        logger: Optional[logging.Logger] = None,
+            self,
+            amqp_url: str,
+            topic_map: HierarchicalTopicMap,
+            message_writer: Callable[[BaseCommand, HierarchicalTopicMap], Tuple[str, str, str]],
+            response_reader: Callable[[dict, bytes], CommandResponse | None],
+            logger: Optional[logging.Logger] = None,
     ) -> None:
+        self._response_reader = response_reader
+        self._message_writer = message_writer
         self.__inflight: Dict[
             str, Tuple[asyncio.Future[CommandResponse], AbstractChannel]
         ] = {}
@@ -45,9 +50,7 @@ class AmqpCommandRouter(IRouteCommands, abc.ABC):
         )
         consume_tag = await response_queue.consume(callback=self._consume_queue)
         try:
-            topic, hierarchical_topic, j = self._create_message(
-                command, response_queue=response_queue.name
-            )
+            topic, hierarchical_topic, j = self._message_writer(command, self._topic_map)
         except ValueError as ve:
             self._logger.exception(
                 f"Error creating message for command {command}: {ve}"
@@ -83,24 +86,10 @@ class AmqpCommandRouter(IRouteCommands, abc.ABC):
         response = (
             CommandResponse(success=False, message="No response received.")
             if not msg
-            else self._read_amqp_response(msg)
+            else self._response_reader(msg.headers, msg.body)
         )
-        future.set_result(response)
-        await channel.close()
-
-    @abc.abstractmethod
-    def _create_message(
-        self, command: TCommand, response_queue: str
-    ) -> Tuple[str, str, str]:
-        """
-        Create a message to be sent over the AMQP channel.
-        :param command: The command to be sent.
-        :return: An aio_pika Message object.
-        """
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def _read_amqp_response(
-        self, response_msg: AbstractIncomingMessage
-    ) -> CommandResponse:
-        raise NotImplementedError()
+        if response:
+            future.set_result(response)
+            await channel.close()
+        else:
+            self._logger.error("Could not read response from message.")
