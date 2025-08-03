@@ -6,6 +6,7 @@ from aett.eventstore import Topic
 from behave import given, when, then, step, use_step_matcher
 from testcontainers.rabbitmq import RabbitMqContainer
 
+from tests.features.steps.command_handlers import StatusCommandHandler
 from sirabus import generate_vhost_name
 from sirabus.servicebus.cloudevent_servicebus import (
     create_servicebus_for_amqp_cloudevent,
@@ -48,7 +49,10 @@ def step_impl(context):
     logging.basicConfig(level=logging.DEBUG)
     context.wait_handle = asyncio.Event()
     context.topic_map = HierarchicalTopicMap()
-    context.handlers = [TestEventHandler(wait_handle=context.wait_handle)]
+    context.handlers = [
+        TestEventHandler(wait_handle=context.wait_handle),
+        StatusCommandHandler(),
+    ]
 
 
 @step("events have been registered in the hierarchical topic map")
@@ -100,7 +104,10 @@ def step_impl5(context, topic):
         timestamp=datetime.datetime.now(datetime.timezone.utc),
         correlation_id=str(uuid.uuid4()),
     )
-    from sirabus.publisher.cloudevent_publisher import create_publisher_for_amqp_cloudevent
+    from sirabus.publisher.cloudevent_publisher import (
+        create_publisher_for_amqp_cloudevent,
+    )
+
     publisher = create_publisher_for_amqp_cloudevent(
         amqp_url=context.connection_string, topic_map=context.topic_map
     )
@@ -115,7 +122,10 @@ def step_impl6(context, topic):
         timestamp=datetime.datetime.now(datetime.timezone.utc),
         correlation_id=str(uuid.uuid4()),
     )
-    from sirabus.publisher.cloudevent_publisher import create_publisher_for_memory_cloudevent
+    from sirabus.publisher.cloudevent_publisher import (
+        create_publisher_for_memory_cloudevent,
+    )
+
     publisher = create_publisher_for_memory_cloudevent(
         topic_map=context.topic_map, messagepump=context.messagepump
     )

@@ -1,4 +1,5 @@
 import datetime
+import logging
 import uuid
 from typing import Optional, Tuple
 
@@ -6,7 +7,7 @@ from aett.eventstore import Topic
 from cloudevents.pydantic import CloudEvent
 from pydantic import BaseModel, Field
 
-from sirabus import TEvent, TCommand, CommandResponse
+from sirabus import TEvent, TCommand, CommandResponse, IRouteCommands
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 
 
@@ -39,7 +40,7 @@ def create_cloud_event(
 
 
 def create_cloud_command(
-    command: TCommand, topic_map: HierarchicalTopicMap, reply_to: str
+    command: TCommand, topic_map: HierarchicalTopicMap
 ) -> Tuple[str, str, str]:
     command_type = type(command)
     topic = Topic.get(command_type)
@@ -57,7 +58,6 @@ def create_cloud_command(
         source=command.aggregate_id,
         subject=topic,
         type=hierarchical_topic or topic,
-        reply_to=reply_to,
     )
     ce = CloudEvent.create(
         attributes=a.model_dump(exclude_none=True),
@@ -88,6 +88,18 @@ def create_cloud_command_response(
     return topic, j
 
 
+def read_cloud_command_response(
+    response_msg: bytes,
+) -> CommandResponse | None:
+    try:
+        cloud_event = CloudEvent.model_validate_json(response_msg)
+        if cloud_event.type == Topic.get(CommandResponse):
+            return CommandResponse.model_validate(cloud_event.data)
+        return None
+    except Exception as e:
+        raise ValueError(f"Error processing response: {e}")
+
+
 class CloudEventAttributes(BaseModel):
     id: str = Field(default=str(uuid.uuid4()))
     specversion: str = Field(default="1.0")
@@ -97,3 +109,13 @@ class CloudEventAttributes(BaseModel):
     subject: str = Field()
     type: str = Field()
     reply_to: Optional[str] = Field(default=None)
+
+
+def create_cloudevent_amqp_router(
+    amqp_url: str,
+    topic_map: HierarchicalTopicMap,
+    logger: Optional[logging.Logger] = None,
+) -> IRouteCommands:
+    from sirabus.publisher.cloudevent_router import CloudEventRouter
+
+    return CloudEventRouter(amqp_url=amqp_url, topic_map=topic_map, logger=logger)

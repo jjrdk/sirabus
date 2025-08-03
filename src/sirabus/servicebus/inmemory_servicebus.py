@@ -18,16 +18,20 @@ class InMemoryServiceBus(ServiceBus, MessageConsumer):
         message_reader: Callable[
             [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent | BaseCommand]
         ],
+        response_writer: Callable[[CommandResponse], Tuple[str, bytes]],
         handlers: List[IHandleEvents | IHandleCommands],
         message_pump: MessagePump,
         logger: logging.Logger,
     ) -> None:
-        super().__init__(
+        ServiceBus.__init__(
+            self,
             topic_map=topic_map,
             message_reader=message_reader,
             handlers=handlers,
             logger=logger,
         )
+        MessageConsumer.__init__(self)
+        self._response_writer = response_writer
         self._message_pump = message_pump
         self._subscription = None
 
@@ -44,4 +48,8 @@ class InMemoryServiceBus(ServiceBus, MessageConsumer):
     async def send_command_response(
         self, response: CommandResponse, correlation_id: str | None, reply_to: str
     ) -> None:
-        pass
+        topic, message = self._response_writer(response)
+        headers = {"topic": topic, 'reply_to': reply_to}
+        if correlation_id:
+            headers["correlation_id"] = correlation_id
+        self._message_pump.publish((headers, message))

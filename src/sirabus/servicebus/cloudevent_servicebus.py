@@ -50,10 +50,13 @@ def create_servicebus_for_memory_cloudevent(
     handlers: List[IHandleEvents | IHandleCommands],
     message_pump: MessagePump,
 ) -> ServiceBus:
+    from sirabus.publisher import create_cloud_command_response
+
     return InMemoryServiceBus(
         topic_map=topic_map,
         handlers=handlers,
         message_reader=_transform_cloudevent_message,
+        response_writer=create_cloud_command_response,
         message_pump=message_pump,
         logger=logging.getLogger("InMemoryServiceBus"),
     )

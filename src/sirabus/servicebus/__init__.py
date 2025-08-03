@@ -77,6 +77,8 @@ class ServiceBus(abc.ABC):
             await self.send_command_response(
                 response=response, correlation_id=correlation_id, reply_to=reply_to
             )
+        elif isinstance(event, CommandResponse):
+            pass
         else:
             raise TypeError(f"Unexpected message type: {type(event)}")
 

@@ -9,6 +9,9 @@ from uuid import UUID, uuid4
 
 
 class MessageConsumer(abc.ABC):
+    def __init__(self):
+        self.id = uuid4()
+
     @abc.abstractmethod
     async def handle_message(
         self,
@@ -41,9 +44,8 @@ class MessagePump:
         :param consumer: The consumer to register.
         :return: A unique identifier for the consumer.
         """
-        consumer_id = uuid4()
-        self._consumers[consumer_id] = consumer
-        return consumer_id
+        self._consumers[consumer.id] = consumer
+        return consumer.id
 
     def unregister_consumer(self, consumer_id: UUID):
         """
@@ -68,14 +70,27 @@ class MessagePump:
         while not self._stopped:
             if not self._messages.empty():
                 headers, body = self._messages.get()
-                loop.run_until_complete(
+                results = loop.run_until_complete(
                     asyncio.gather(
                         *[
-                            consumer.handle_message(headers, body, None, None)
+                            consumer.handle_message(
+                                headers,
+                                body,
+                                correlation_id=headers.get("correlation_id", None),
+                                reply_to=headers.get("reply_to", None),
+                            )
                             for consumer in self._consumers.values()
                         ]
                     )
                 )
+                if headers.get("reply_to", None) is not None:
+                    self._logger.debug(f"Reply to {headers.get('reply_to')}")
+                    try:
+                        message = next(r for r in results if r is not None)
+                        self.publish(message)
+                    except StopIteration:
+                        self._logger.debug("Nothing to reply with.")
+
                 self._logger.debug(
                     f"Processed message with headers: {headers} and body: {body}"
                 )
