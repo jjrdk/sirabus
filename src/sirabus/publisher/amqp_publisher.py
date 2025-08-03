@@ -14,11 +14,11 @@ class AmqpPublisher(IPublishEvents[TEvent]):
     """
 
     def __init__(
-            self,
-            amqp_url: str,
-            topic_map: HierarchicalTopicMap,
-            event_writer: Callable[[TEvent, HierarchicalTopicMap], Tuple[str, str, str]],
-            logger: logging.Logger | None = None,
+        self,
+        amqp_url: str,
+        topic_map: HierarchicalTopicMap,
+        event_writer: Callable[[TEvent, HierarchicalTopicMap], Tuple[str, str, str]],
+        logger: logging.Logger | None = None,
     ) -> None:
         self._event_writer = event_writer
         self.__amqp_url = amqp_url

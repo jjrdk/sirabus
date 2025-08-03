@@ -8,7 +8,7 @@ from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 
 
 def create_event(
-        event: TEvent, topic_map: HierarchicalTopicMap
+    event: TEvent, topic_map: HierarchicalTopicMap
 ) -> Tuple[str, str, str]:
     event_type = type(event)
     topic = Topic.get(event_type)
@@ -35,9 +35,8 @@ def read_event_message(
     return properties, event
 
 
-
 def create_command(
-        command: TCommand, topic_map: HierarchicalTopicMap
+    command: TCommand, topic_map: HierarchicalTopicMap
 ) -> Tuple[str, str, str]:
     command_type = type(command)
     topic = Topic.get(command_type)
@@ -52,7 +51,7 @@ def create_command(
 
 
 def create_command_response(
-        command_response: CommandResponse,
+    command_response: CommandResponse,
 ) -> Tuple[str, bytes]:
     topic = Topic.get(type(command_response))
     j = command.model_dump_json().encode()
@@ -60,8 +59,8 @@ def create_command_response(
 
 
 def read_command_response(
-        headers: dict,
-        response_msg: bytes,
+    headers: dict,
+    response_msg: bytes,
 ) -> CommandResponse | None:
     try:
         response = CommandResponse.model_validate_json(response_msg)

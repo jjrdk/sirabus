@@ -19,12 +19,14 @@ from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 
 class AmqpCommandRouter(IRouteCommands):
     def __init__(
-            self,
-            amqp_url: str,
-            topic_map: HierarchicalTopicMap,
-            message_writer: Callable[[BaseCommand, HierarchicalTopicMap], Tuple[str, str, str]],
-            response_reader: Callable[[dict, bytes], CommandResponse | None],
-            logger: Optional[logging.Logger] = None,
+        self,
+        amqp_url: str,
+        topic_map: HierarchicalTopicMap,
+        message_writer: Callable[
+            [BaseCommand, HierarchicalTopicMap], Tuple[str, str, str]
+        ],
+        response_reader: Callable[[dict, bytes], CommandResponse | None],
+        logger: Optional[logging.Logger] = None,
     ) -> None:
         self._response_reader = response_reader
         self._message_writer = message_writer
@@ -50,7 +52,9 @@ class AmqpCommandRouter(IRouteCommands):
         )
         consume_tag = await response_queue.consume(callback=self._consume_queue)
         try:
-            topic, hierarchical_topic, j = self._message_writer(command, self._topic_map)
+            topic, hierarchical_topic, j = self._message_writer(
+                command, self._topic_map
+            )
         except ValueError as ve:
             self._logger.exception(
                 f"Error creating message for command {command}: {ve}"

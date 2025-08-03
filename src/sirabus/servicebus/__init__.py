@@ -12,13 +12,13 @@ from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 
 class ServiceBus(abc.ABC):
     def __init__(
-            self,
-            topic_map: HierarchicalTopicMap,
-            message_reader: Callable[
-                [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent | BaseCommand]
-            ],
-            handlers: List[IHandleEvents | IHandleCommands],
-            logger: logging.Logger,
+        self,
+        topic_map: HierarchicalTopicMap,
+        message_reader: Callable[
+            [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent | BaseCommand]
+        ],
+        handlers: List[IHandleEvents | IHandleCommands],
+        logger: logging.Logger,
     ) -> None:
         self._logger = logger
         self._topic_map = topic_map
@@ -34,11 +34,11 @@ class ServiceBus(abc.ABC):
         raise NotImplementedError()
 
     async def handle_message(
-            self,
-            headers: dict,
-            body: bytes,
-            correlation_id: str | None,
-            reply_to: str | None,
+        self,
+        headers: dict,
+        body: bytes,
+        correlation_id: str | None,
+        reply_to: str | None,
     ) -> None:
         headers, event = self._message_reader(self._topic_map, headers, body)
         if isinstance(event, BaseEvent):
@@ -51,7 +51,7 @@ class ServiceBus(abc.ABC):
                     h
                     for h in self._handlers
                     if isinstance(h, IHandleCommands)
-                       and Topic.get(type(event)) == Topic.get(h.message_type)
+                    and Topic.get(type(event)) == Topic.get(h.message_type)
                 ),
                 None,
             )
@@ -88,28 +88,29 @@ class ServiceBus(abc.ABC):
                 h.handle(event=event, headers=headers)
                 for h in self._handlers
                 if isinstance(h, IHandleEvents)
-                   and isinstance(event, type(h).message_type)
+                and isinstance(event, type(h).message_type)
             ],
             return_exceptions=True,
         )
 
     @abc.abstractmethod
     async def send_command_response(
-            self, response: CommandResponse, correlation_id: str | None, reply_to: str
+        self, response: CommandResponse, correlation_id: str | None, reply_to: str
     ) -> None:
         pass
 
 
 def create_servicebus_for_amqp_pydantic(
-        amqp_url: str,
-        topic_map: HierarchicalTopicMap,
-        event_handlers: List[IHandleEvents | IHandleCommands],
-        logger=None,
-        prefetch_count=10,
+    amqp_url: str,
+    topic_map: HierarchicalTopicMap,
+    event_handlers: List[IHandleEvents | IHandleCommands],
+    logger=None,
+    prefetch_count=10,
 ):
     from sirabus.servicebus.amqp_servicebus import AmqpServiceBus
     from sirabus.publisher.pydantic_serialization import read_event_message
     from sirabus.publisher.pydantic_serialization import create_command_response
+
     return AmqpServiceBus(
         amqp_url=amqp_url,
         topic_map=topic_map,

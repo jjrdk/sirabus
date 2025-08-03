@@ -10,7 +10,7 @@ from sirabus.publisher.inmemory_publisher import InMemoryPublisher
 
 
 def create_publisher_for_amqp(
-        amqp_url: str, topic_map: HierarchicalTopicMap, logger: logging.Logger | None = None
+    amqp_url: str, topic_map: HierarchicalTopicMap, logger: logging.Logger | None = None
 ) -> IPublishEvents[BaseEvent]:
     """
     Creates a CloudEventPublisher for AMQP.
@@ -20,18 +20,19 @@ def create_publisher_for_amqp(
     :return: A CloudEventPublisher instance.
     """
     from sirabus.publisher.cloudevent_serialization import create_cloud_event
+
     return AmqpPublisher(
         amqp_url=amqp_url,
         topic_map=topic_map,
         logger=logger,
-        event_writer=create_cloud_event
+        event_writer=create_cloud_event,
     )
 
 
 def create_publisher_for_inmemory(
-        topic_map: HierarchicalTopicMap,
-        message_pump: MessagePump,
-        logger: logging.Logger | None = None,
+    topic_map: HierarchicalTopicMap,
+    message_pump: MessagePump,
+    logger: logging.Logger | None = None,
 ) -> IPublishEvents[BaseEvent]:
     """
     Creates a CloudEventPublisher for in-memory use.
@@ -41,6 +42,10 @@ def create_publisher_for_inmemory(
     :return: A CloudEventPublisher instance.
     """
     from sirabus.publisher.cloudevent_serialization import create_cloud_event
+
     return InMemoryPublisher(
-        topic_map=topic_map, messagepump=message_pump, logger=logger, event_writer=create_cloud_event
+        topic_map=topic_map,
+        messagepump=message_pump,
+        logger=logger,
+        event_writer=create_cloud_event,
     )

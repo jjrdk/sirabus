@@ -13,14 +13,17 @@ from sirabus.message_pump import MessagePump
 
 
 def create_servicebus_for_amqp(
-        amqp_url: str,
-        topic_map: HierarchicalTopicMap,
-        handlers: List[IHandleEvents | IHandleCommands],
-        prefetch_count: int = 10,
+    amqp_url: str,
+    topic_map: HierarchicalTopicMap,
+    handlers: List[IHandleEvents | IHandleCommands],
+    prefetch_count: int = 10,
 ) -> ServiceBus:
     from sirabus.servicebus.amqp_servicebus import AmqpServiceBus
 
-    from sirabus.publisher.pydantic_serialization import create_command_response, read_event_message
+    from sirabus.publisher.pydantic_serialization import (
+        create_command_response,
+        read_event_message,
+    )
 
     return AmqpServiceBus(
         amqp_url=amqp_url,
@@ -33,11 +36,14 @@ def create_servicebus_for_amqp(
 
 
 def create_servicebus_for_inmemory(
-        topic_map: HierarchicalTopicMap,
-        handlers: List[IHandleEvents | IHandleCommands],
-        message_pump: MessagePump,
+    topic_map: HierarchicalTopicMap,
+    handlers: List[IHandleEvents | IHandleCommands],
+    message_pump: MessagePump,
 ) -> ServiceBus:
-    from sirabus.publisher.pydantic_serialization import create_command_response, read_event_message
+    from sirabus.publisher.pydantic_serialization import (
+        create_command_response,
+        read_event_message,
+    )
 
     return InMemoryServiceBus(
         topic_map=topic_map,

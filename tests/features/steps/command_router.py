@@ -8,7 +8,10 @@ from behave import step, when, then, use_step_matcher
 from steps.command_handlers import StatusCommandHandler, InfoCommandHandler
 from steps.test_types import StatusCommand, InvalidCommand, InfoCommand
 
-from sirabus.publisher.cloudevent_router import create_amqp_router, create_inmemory_router
+from sirabus.publisher.cloudevent_router import (
+    create_amqp_router,
+    create_inmemory_router,
+)
 from sirabus.servicebus.cloudevent_servicebus import (
     create_servicebus_for_amqp_cloudevent,
 )
@@ -53,7 +56,7 @@ def step_impl3(context):
     context.router = create_inmemory_router(
         message_pump=context.messagepump,
         topic_map=context.topic_map,
-        logger=logging.getLogger("test")
+        logger=logging.getLogger("test"),
     )
 
 

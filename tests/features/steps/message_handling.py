@@ -89,6 +89,7 @@ def step_impl10(context):
     )
     context.async_runner.run_async(builder.build())
     from sirabus.servicebus import create_servicebus_for_amqp_pydantic
+
     bus = create_servicebus_for_amqp_pydantic(
         amqp_url=context.connection_string,
         topic_map=context.topic_map,
@@ -120,6 +121,7 @@ def step_impl4(context):
     context.messagepump = MessagePump()
     context.messagepump.start()
     from sirabus.servicebus.pydantic_servicebus import create_servicebus_for_inmemory
+
     bus = create_servicebus_for_inmemory(
         topic_map=context.topic_map,
         handlers=context.handlers,
@@ -147,7 +149,6 @@ def step_impl5(context, topic):
     context.async_runner.run_async(publisher.publish(event))
 
 
-
 @when("I send a pydantic (?P<topic>.+) message to the amqp service bus")
 def step_impl5(context, topic):
     event_type = context.topic_map.resolve_type(topic)
@@ -156,9 +157,7 @@ def step_impl5(context, topic):
         timestamp=datetime.datetime.now(datetime.timezone.utc),
         correlation_id=str(uuid.uuid4()),
     )
-    from sirabus.publisher.pydantic_publisher import (
-        create_publisher_for_amqp
-    )
+    from sirabus.publisher.pydantic_publisher import create_publisher_for_amqp
 
     publisher = create_publisher_for_amqp(
         amqp_url=context.connection_string, topic_map=context.topic_map

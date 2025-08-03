@@ -13,11 +13,11 @@ class InMemoryPublisher(IPublishEvents[TEvent]):
     """
 
     def __init__(
-            self,
-            topic_map: HierarchicalTopicMap,
-            messagepump: MessagePump,
-            event_writer: Callable[[TEvent, HierarchicalTopicMap], Tuple[str, str, str]],
-            logger: logging.Logger | None = None,
+        self,
+        topic_map: HierarchicalTopicMap,
+        messagepump: MessagePump,
+        event_writer: Callable[[TEvent, HierarchicalTopicMap], Tuple[str, str, str]],
+        logger: logging.Logger | None = None,
     ) -> None:
         self._event_writer = event_writer
         self.__topic_map = topic_map

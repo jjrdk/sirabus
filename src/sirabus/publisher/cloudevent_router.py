@@ -9,29 +9,36 @@ from sirabus.publisher.cloudevent_serialization import read_cloud_command_respon
 
 
 def create_amqp_router(
-        amqp_url: str,
-        topic_map: HierarchicalTopicMap,
-        logger: Optional[logging.Logger] = None,
+    amqp_url: str,
+    topic_map: HierarchicalTopicMap,
+    logger: Optional[logging.Logger] = None,
 ) -> IRouteCommands:
     from sirabus.publisher.cloudevent_serialization import create_cloud_command
+
     return AmqpCommandRouter(
         amqp_url=amqp_url,
         topic_map=topic_map,
         logger=logger,
         message_writer=create_cloud_command,
-        response_reader=read_cloud_command_response)
+        response_reader=read_cloud_command_response,
+    )
 
 
 def create_inmemory_router(
-        message_pump: MessagePump,
-        topic_map: HierarchicalTopicMap,
-        logger: Optional[logging.Logger] = None,
+    message_pump: MessagePump,
+    topic_map: HierarchicalTopicMap,
+    logger: Optional[logging.Logger] = None,
 ) -> IRouteCommands:
-    from sirabus.publisher.cloudevent_serialization import create_cloud_command, read_cloud_command_response
+    from sirabus.publisher.cloudevent_serialization import (
+        create_cloud_command,
+        read_cloud_command_response,
+    )
     from sirabus.publisher.inmemory_command_router import InMemoryCommandRouter
+
     return InMemoryCommandRouter(
         message_pump=message_pump,
         topic_map=topic_map,
         logger=logger,
         command_writer=create_cloud_command,
-        response_reader=read_cloud_command_response)
+        response_reader=read_cloud_command_response,
+    )
