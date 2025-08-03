@@ -10,7 +10,18 @@ from sirabus import TEvent, TCommand, CommandResponse
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 
 
-def create_cloud_event(
+class CloudEventAttributes(BaseModel):
+    id: str = Field(default=str(uuid.uuid4()))
+    specversion: str = Field(default="1.0")
+    datacontenttype: str = Field(default="application/json")
+    time: str = Field()
+    source: str = Field()
+    subject: str = Field()
+    type: str = Field()
+    reply_to: Optional[str] = Field(default=None)
+
+
+def create_event(
     event: TEvent, topic_map: HierarchicalTopicMap
 ) -> Tuple[str, str, str]:
     event_type = type(event)
@@ -38,7 +49,7 @@ def create_cloud_event(
     return topic, hierarchical_topic, j
 
 
-def create_cloud_command(
+def create_command(
     command: TCommand, topic_map: HierarchicalTopicMap
 ) -> Tuple[str, str, str]:
     command_type = type(command)
@@ -66,7 +77,7 @@ def create_cloud_command(
     return topic, hierarchical_topic, j
 
 
-def create_cloud_command_response(
+def create_command_response(
     command_response: CommandResponse,
 ) -> Tuple[str, bytes]:
     topic = Topic.get(type(command_response))
@@ -87,7 +98,7 @@ def create_cloud_command_response(
     return topic, j
 
 
-def read_cloud_command_response(
+def read_command_response(
     headers: dict,
     response_msg: bytes,
 ) -> CommandResponse | None:
@@ -98,14 +109,3 @@ def read_cloud_command_response(
         return None
     except Exception as e:
         raise ValueError(f"Error processing response: {e}")
-
-
-class CloudEventAttributes(BaseModel):
-    id: str = Field(default=str(uuid.uuid4()))
-    specversion: str = Field(default="1.0")
-    datacontenttype: str = Field(default="application/json")
-    time: str = Field()
-    source: str = Field()
-    subject: str = Field()
-    type: str = Field()
-    reply_to: Optional[str] = Field(default=None)

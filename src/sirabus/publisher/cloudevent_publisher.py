@@ -19,13 +19,13 @@ def create_publisher_for_amqp(
     :param logger: Optional logger.
     :return: A CloudEventPublisher instance.
     """
-    from sirabus.publisher.cloudevent_serialization import create_cloud_event
+    from sirabus.publisher.cloudevent_serialization import create_event
 
     return AmqpPublisher(
         amqp_url=amqp_url,
         topic_map=topic_map,
         logger=logger,
-        event_writer=create_cloud_event,
+        event_writer=create_event,
     )
 
 
@@ -41,11 +41,11 @@ def create_publisher_for_inmemory(
     :param logger: Optional logger.
     :return: A CloudEventPublisher instance.
     """
-    from sirabus.publisher.cloudevent_serialization import create_cloud_event
+    from sirabus.publisher.cloudevent_serialization import create_event
 
     return InMemoryPublisher(
         topic_map=topic_map,
         messagepump=message_pump,
         logger=logger,
-        event_writer=create_cloud_event,
+        event_writer=create_event,
     )

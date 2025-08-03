@@ -33,7 +33,7 @@ def create_servicebus_for_amqp_cloudevent(
 ) -> ServiceBus:
     from sirabus.servicebus.amqp_servicebus import AmqpServiceBus
 
-    from sirabus.publisher.cloudevent_serialization import create_cloud_command_response
+    from sirabus.publisher.cloudevent_serialization import create_command_response
 
     return AmqpServiceBus(
         amqp_url=amqp_url,
@@ -41,7 +41,7 @@ def create_servicebus_for_amqp_cloudevent(
         handlers=handlers,
         prefetch_count=prefetch_count,
         message_reader=_transform_cloudevent_message,
-        command_response_writer=create_cloud_command_response,
+        command_response_writer=create_command_response,
     )
 
 
@@ -50,13 +50,13 @@ def create_servicebus_for_memory_cloudevent(
     handlers: List[IHandleEvents | IHandleCommands],
     message_pump: MessagePump,
 ) -> ServiceBus:
-    from sirabus.publisher.cloudevent_serialization import create_cloud_command_response
+    from sirabus.publisher.cloudevent_serialization import create_command_response
 
     return InMemoryServiceBus(
         topic_map=topic_map,
         handlers=handlers,
         message_reader=_transform_cloudevent_message,
-        response_writer=create_cloud_command_response,
+        response_writer=create_command_response,
         message_pump=message_pump,
         logger=logging.getLogger("InMemoryServiceBus"),
     )

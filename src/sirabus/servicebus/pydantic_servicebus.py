@@ -1,15 +1,11 @@
 import logging
-from typing import Tuple, List
-
-from aett.eventstore import BaseEvent
-from cloudevents.pydantic import CloudEvent
-from pydantic import BaseModel
+from typing import List
 
 from sirabus import IHandleEvents, IHandleCommands
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
+from sirabus.message_pump import MessagePump
 from sirabus.servicebus import ServiceBus
 from sirabus.servicebus.inmemory_servicebus import InMemoryServiceBus
-from sirabus.message_pump import MessagePump
 
 
 def create_servicebus_for_amqp(
