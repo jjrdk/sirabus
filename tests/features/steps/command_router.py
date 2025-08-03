@@ -108,7 +108,7 @@ def step_impl5(context, reply_type, message):
 
     future = context.future
     future.add_done_callback(callback)
-    context.async_runner.run_async(asyncio.sleep(1))
+    context.async_runner.run_async(asyncio.sleep(0.25))
     assert context.async_runner.run_async(context.wait_handle.wait()), (
         "Timeout waiting for command response"
     )

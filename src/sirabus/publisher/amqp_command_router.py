@@ -92,7 +92,7 @@ class AmqpCommandRouter(IRouteCommands):
             if not msg
             else self._response_reader(msg.headers, msg.body)
         )
-        if response:
+        if response is not None:
             future.set_result(response)
             await channel.close()
         else:

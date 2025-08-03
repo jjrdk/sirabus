@@ -204,7 +204,7 @@ def step_impl6(context, topic):
 @then("the message is received by the subscriber")
 def step_impl7(context):
     try:
-        context.async_runner.run_async(asyncio.sleep(1))
+        context.async_runner.run_async(asyncio.sleep(0.25))
         result = context.async_runner.run_async(context.wait_handle.wait())
         assert result, "The message was not received by the subscriber in time"
     finally:

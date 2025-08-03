@@ -64,6 +64,6 @@ def read_command_response(
 ) -> CommandResponse | None:
     try:
         response = CommandResponse.model_validate_json(response_msg)
-        return response if response.message else None
+        return response if response.message != "" else None
     except Exception as e:
         raise ValueError(f"Error processing response: {e}")
