@@ -20,7 +20,7 @@ class CommandResponse(BaseModel):
     success: bool = Field(
         default=True, description="Indicates if the command was successful"
     )
-    message: Optional[str] = Field(
+    message: str = Field(
         default="",
         description="A message providing additional information about the command response",
     )

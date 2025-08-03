@@ -5,7 +5,6 @@ from sirabus import IRouteCommands
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 from sirabus.message_pump import MessagePump
 from sirabus.publisher.amqp_command_router import AmqpCommandRouter
-from sirabus.publisher.cloudevent_serialization import read_command_response
 
 
 def create_amqp_router(
@@ -13,8 +12,9 @@ def create_amqp_router(
     topic_map: HierarchicalTopicMap,
     logger: Optional[logging.Logger] = None,
 ) -> IRouteCommands:
-    from sirabus.publisher.cloudevent_serialization import create_command
+    from sirabus.publisher.pydantic_serialization import create_command
 
+    from sirabus.publisher.pydantic_serialization import read_command_response
     return AmqpCommandRouter(
         amqp_url=amqp_url,
         topic_map=topic_map,
@@ -29,7 +29,7 @@ def create_inmemory_router(
     topic_map: HierarchicalTopicMap,
     logger: Optional[logging.Logger] = None,
 ) -> IRouteCommands:
-    from sirabus.publisher.cloudevent_serialization import (
+    from sirabus.publisher.pydantic_serialization import (
         create_command,
         read_command_response,
     )

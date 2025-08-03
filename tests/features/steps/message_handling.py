@@ -63,13 +63,34 @@ def step_impl2(context):
     context.topic_map.add(Topic.get(NestedTestEvent), NestedTestEvent)
 
 
-@step("amqp broker is configured with the hierarchical topic map")
+@step("a cloudevent amqp broker is configured with the hierarchical topic map")
 def step_impl3(context):
     builder = TopographyBuilder(
         amqp_url=context.connection_string, topic_map=context.topic_map
     )
     context.async_runner.run_async(builder.build())
     bus = create_servicebus_for_amqp_cloudevent(
+        amqp_url=context.connection_string,
+        topic_map=context.topic_map,
+        handlers=[
+            TestEventHandler(wait_handle=context.wait_handle),
+            OtherTestEventHandler(wait_handle=context.wait_handle2),
+        ],
+    )
+    context.consumer = bus
+    context.async_runner.run_async(bus.run())
+    logging.debug("Topography built.")
+
+
+@step("a pydantic amqp broker is configured with the hierarchical topic map")
+def step_impl10(context):
+    builder = TopographyBuilder(
+        amqp_url=context.connection_string, topic_map=context.topic_map
+    )
+    context.async_runner.run_async(builder.build())
+    from sirabus.servicebus import create_servicebus_for_amqp_pydantic
+
+    bus = create_servicebus_for_amqp_pydantic(
         amqp_url=context.connection_string,
         topic_map=context.topic_map,
         event_handlers=[
@@ -82,7 +103,7 @@ def step_impl3(context):
     logging.debug("Topography built.")
 
 
-@step("in-memory broker is configured with the hierarchical topic map")
+@step("a cloudevent in-memory broker is configured with the hierarchical topic map")
 def step_impl4(context):
     context.messagepump = MessagePump()
     context.messagepump.start()
@@ -93,10 +114,24 @@ def step_impl4(context):
     )
     context.consumer = bus
     context.async_runner.run_async(bus.run())
-    logging.debug("Topography built.")
 
 
-@when("I send a (?P<topic>.+) message to the amqp service bus")
+@step("a pydantic in-memory broker is configured with the hierarchical topic map")
+def step_impl4(context):
+    context.messagepump = MessagePump()
+    context.messagepump.start()
+    from sirabus.servicebus.pydantic_servicebus import create_servicebus_for_inmemory
+
+    bus = create_servicebus_for_inmemory(
+        topic_map=context.topic_map,
+        handlers=context.handlers,
+        message_pump=context.messagepump,
+    )
+    context.consumer = bus
+    context.async_runner.run_async(bus.run())
+
+
+@when("I send a cloudevent (?P<topic>.+) message to the amqp service bus")
 def step_impl5(context, topic):
     event_type = context.topic_map.resolve_type(topic)
     event = event_type(
@@ -105,16 +140,32 @@ def step_impl5(context, topic):
         correlation_id=str(uuid.uuid4()),
     )
     from sirabus.publisher.cloudevent_publisher import (
-        create_publisher_for_amqp_cloudevent,
+        create_publisher_for_amqp,
     )
 
-    publisher = create_publisher_for_amqp_cloudevent(
+    publisher = create_publisher_for_amqp(
         amqp_url=context.connection_string, topic_map=context.topic_map
     )
     context.async_runner.run_async(publisher.publish(event))
 
 
-@when("I send a (?P<topic>.+) message to the in-memory service bus")
+@when("I send a pydantic (?P<topic>.+) message to the amqp service bus")
+def step_impl5(context, topic):
+    event_type = context.topic_map.resolve_type(topic)
+    event = event_type(
+        source="test",
+        timestamp=datetime.datetime.now(datetime.timezone.utc),
+        correlation_id=str(uuid.uuid4()),
+    )
+    from sirabus.publisher.pydantic_publisher import create_publisher_for_amqp
+
+    publisher = create_publisher_for_amqp(
+        amqp_url=context.connection_string, topic_map=context.topic_map
+    )
+    context.async_runner.run_async(publisher.publish(event))
+
+
+@when("I send a cloudevent (?P<topic>.+) message to the in-memory service bus")
 def step_impl6(context, topic):
     event_type = context.topic_map.resolve_type(topic)
     event = event_type(
@@ -123,11 +174,29 @@ def step_impl6(context, topic):
         correlation_id=str(uuid.uuid4()),
     )
     from sirabus.publisher.cloudevent_publisher import (
-        create_publisher_for_memory_cloudevent,
+        create_publisher_for_inmemory,
     )
 
-    publisher = create_publisher_for_memory_cloudevent(
-        topic_map=context.topic_map, messagepump=context.messagepump
+    publisher = create_publisher_for_inmemory(
+        topic_map=context.topic_map, message_pump=context.messagepump
+    )
+    context.async_runner.run_async(publisher.publish(event))
+
+
+@when("I send a pydantic (?P<topic>.+) message to the in-memory service bus")
+def step_impl6(context, topic):
+    event_type = context.topic_map.resolve_type(topic)
+    event = event_type(
+        source="test",
+        timestamp=datetime.datetime.now(datetime.timezone.utc),
+        correlation_id=str(uuid.uuid4()),
+    )
+    from sirabus.publisher.pydantic_publisher import (
+        create_publisher_for_inmemory,
+    )
+
+    publisher = create_publisher_for_inmemory(
+        topic_map=context.topic_map, message_pump=context.messagepump
     )
     context.async_runner.run_async(publisher.publish(event))
 
@@ -135,7 +204,7 @@ def step_impl6(context, topic):
 @then("the message is received by the subscriber")
 def step_impl7(context):
     try:
-        context.async_runner.run_async(asyncio.sleep(1))
+        context.async_runner.run_async(asyncio.sleep(0.25))
         result = context.async_runner.run_async(context.wait_handle.wait())
         assert result, "The message was not received by the subscriber in time"
     finally:

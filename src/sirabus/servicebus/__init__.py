@@ -98,3 +98,25 @@ class ServiceBus(abc.ABC):
         self, response: CommandResponse, correlation_id: str | None, reply_to: str
     ) -> None:
         pass
+
+
+def create_servicebus_for_amqp_pydantic(
+    amqp_url: str,
+    topic_map: HierarchicalTopicMap,
+    event_handlers: List[IHandleEvents | IHandleCommands],
+    logger=None,
+    prefetch_count=10,
+):
+    from sirabus.servicebus.amqp_servicebus import AmqpServiceBus
+    from sirabus.publisher.pydantic_serialization import read_event_message
+    from sirabus.publisher.pydantic_serialization import create_command_response
+
+    return AmqpServiceBus(
+        amqp_url=amqp_url,
+        topic_map=topic_map,
+        handlers=event_handlers,
+        message_reader=read_event_message,
+        command_response_writer=create_command_response,
+        logger=logger,
+        prefetch_count=prefetch_count,
+    )
