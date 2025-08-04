@@ -8,7 +8,9 @@ update:
 	uv sync --all-extras --upgrade
 
 test: install_dependencies
-	# Run tests using pytest
+	# Apply linter before running tests
+	.venv/bin/ruff format
+	# Run tests using behave
 	.venv/bin/behave tests/features --no-capture-stderr --junit --junit-directory reports -f pretty
 
 build: test

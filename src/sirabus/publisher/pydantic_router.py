@@ -15,6 +15,7 @@ def create_amqp_router(
     from sirabus.publisher.pydantic_serialization import create_command
 
     from sirabus.publisher.pydantic_serialization import read_command_response
+
     return AmqpCommandRouter(
         amqp_url=amqp_url,
         topic_map=topic_map,

@@ -18,7 +18,10 @@ def step_impl1(context):
         amqp_url=context.connection_string, topic_map=context.topic_map
     )
     context.async_runner.run_async(builder.build())
-    from sirabus.servicebus.cloudevent_servicebus import create_servicebus_for_amqp_cloudevent
+    from sirabus.servicebus.cloudevent_servicebus import (
+        create_servicebus_for_amqp_cloudevent,
+    )
+
     bus = create_servicebus_for_amqp_cloudevent(
         amqp_url=context.connection_string,
         topic_map=context.topic_map,
@@ -38,6 +41,7 @@ def step_impl1(context):
     )
     context.async_runner.run_async(builder.build())
     from sirabus.servicebus.pydantic_servicebus import create_servicebus_for_amqp
+
     bus = create_servicebus_for_amqp(
         amqp_url=context.connection_string,
         topic_map=context.topic_map,
@@ -55,6 +59,7 @@ def step_impl2(context):
     context.topic_map.add(Topic.get(StatusCommand), StatusCommand)
     context.topic_map.add(Topic.get(InfoCommand), InfoCommand)
     from sirabus.publisher.cloudevent_router import create_amqp_router
+
     context.router = create_amqp_router(
         amqp_url=context.connection_string,
         topic_map=context.topic_map,
@@ -66,6 +71,7 @@ def step_impl2(context):
     context.topic_map.add(Topic.get(StatusCommand), StatusCommand)
     context.topic_map.add(Topic.get(InfoCommand), InfoCommand)
     from sirabus.publisher.pydantic_router import create_amqp_router
+
     context.router = create_amqp_router(
         amqp_url=context.connection_string,
         topic_map=context.topic_map,
@@ -78,6 +84,7 @@ def step_impl3(context):
     context.topic_map.add(Topic.get(InfoCommand), InfoCommand)
 
     from sirabus.publisher.cloudevent_router import create_inmemory_router
+
     context.router = create_inmemory_router(
         message_pump=context.messagepump,
         topic_map=context.topic_map,
