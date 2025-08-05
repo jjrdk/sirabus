@@ -1,6 +1,6 @@
 import asyncio
 from abc import ABC, abstractmethod
-from typing import Generic, Type, TypeVar, get_args, Optional
+from typing import Generic, Type, TypeVar, get_args
 
 from aett.eventstore import BaseEvent, Topic
 from aett.eventstore.base_command import BaseCommand

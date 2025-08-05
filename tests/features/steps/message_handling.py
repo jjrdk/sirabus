@@ -33,8 +33,7 @@ def step_impl1(context):
     context.wait_handle = asyncio.Event()
     context.wait_handle2 = asyncio.Event()
     context.topic_map = HierarchicalTopicMap()
-    container = RabbitMqContainer(vhost=generate_vhost_name("test", "0.0.0"))
-    container.start()
+    container = RabbitMqContainer(vhost=generate_vhost_name("test", "0.0.0")).start()
     context.containers.append(container)
     params = container.get_connection_params()
     creds = params.credentials
@@ -45,7 +44,7 @@ def step_impl1(context):
 
 
 @given("a running in-memory message broker")
-def step_impl(context):
+def step_impl2(context):
     logging.basicConfig(level=logging.DEBUG)
     context.wait_handle = asyncio.Event()
     context.topic_map = HierarchicalTopicMap()
@@ -56,7 +55,7 @@ def step_impl(context):
 
 
 @step("events have been registered in the hierarchical topic map")
-def step_impl2(context):
+def step_impl3(context):
     context.topic_map.add(Topic.get(TestEvent), TestEvent)
     context.topic_map.add(Topic.get(SubTestEvent), SubTestEvent)
     context.topic_map.add(Topic.get(OtherTestEvent), OtherTestEvent)
@@ -64,11 +63,11 @@ def step_impl2(context):
 
 
 @step("a cloudevent amqp broker is configured with the hierarchical topic map")
-def step_impl3(context):
+async def step_impl4(context):
     builder = TopographyBuilder(
         amqp_url=context.connection_string, topic_map=context.topic_map
     )
-    context.async_runner.run_async(builder.build())
+    await builder.build()
     bus = create_servicebus_for_amqp_cloudevent(
         amqp_url=context.connection_string,
         topic_map=context.topic_map,
@@ -78,16 +77,16 @@ def step_impl3(context):
         ],
     )
     context.consumer = bus
-    context.async_runner.run_async(bus.run())
+    await bus.run()
     logging.debug("Topography built.")
 
 
 @step("a pydantic amqp broker is configured with the hierarchical topic map")
-def step_impl10(context):
+async def step_impl5(context):
     builder = TopographyBuilder(
         amqp_url=context.connection_string, topic_map=context.topic_map
     )
-    context.async_runner.run_async(builder.build())
+    await builder.build()
     from sirabus.servicebus import create_servicebus_for_amqp_pydantic
 
     bus = create_servicebus_for_amqp_pydantic(
@@ -99,40 +98,40 @@ def step_impl10(context):
         ],
     )
     context.consumer = bus
-    context.async_runner.run_async(bus.run())
+    await bus.run()
     logging.debug("Topography built.")
 
 
 @step("a cloudevent in-memory broker is configured with the hierarchical topic map")
-def step_impl4(context):
-    context.messagepump = MessagePump()
-    context.messagepump.start()
+async def step_impl6(context):
+    context.message_pump = MessagePump()
+    context.message_pump.start()
     bus = create_servicebus_for_memory_cloudevent(
         topic_map=context.topic_map,
         handlers=context.handlers,
-        message_pump=context.messagepump,
+        message_pump=context.message_pump,
     )
     context.consumer = bus
-    context.async_runner.run_async(bus.run())
+    await bus.run()
 
 
 @step("a pydantic in-memory broker is configured with the hierarchical topic map")
-def step_impl4(context):
-    context.messagepump = MessagePump()
-    context.messagepump.start()
+async def step_impl7(context):
+    context.message_pump = MessagePump()
+    context.message_pump.start()
     from sirabus.servicebus.pydantic_servicebus import create_servicebus_for_inmemory
 
     bus = create_servicebus_for_inmemory(
         topic_map=context.topic_map,
         handlers=context.handlers,
-        message_pump=context.messagepump,
+        message_pump=context.message_pump,
     )
     context.consumer = bus
-    context.async_runner.run_async(bus.run())
+    await bus.run()
 
 
 @when("I send a cloudevent (?P<topic>.+) message to the amqp service bus")
-def step_impl5(context, topic):
+async def step_impl8(context, topic):
     event_type = context.topic_map.resolve_type(topic)
     event = event_type(
         source="test",
@@ -146,11 +145,11 @@ def step_impl5(context, topic):
     publisher = create_publisher_for_amqp(
         amqp_url=context.connection_string, topic_map=context.topic_map
     )
-    context.async_runner.run_async(publisher.publish(event))
+    await publisher.publish(event)
 
 
 @when("I send a pydantic (?P<topic>.+) message to the amqp service bus")
-def step_impl5(context, topic):
+async def step_impl9(context, topic):
     event_type = context.topic_map.resolve_type(topic)
     event = event_type(
         source="test",
@@ -162,11 +161,11 @@ def step_impl5(context, topic):
     publisher = create_publisher_for_amqp(
         amqp_url=context.connection_string, topic_map=context.topic_map
     )
-    context.async_runner.run_async(publisher.publish(event))
+    await publisher.publish(event)
 
 
 @when("I send a cloudevent (?P<topic>.+) message to the in-memory service bus")
-def step_impl6(context, topic):
+async def step_impl10(context, topic):
     event_type = context.topic_map.resolve_type(topic)
     event = event_type(
         source="test",
@@ -178,13 +177,13 @@ def step_impl6(context, topic):
     )
 
     publisher = create_publisher_for_inmemory(
-        topic_map=context.topic_map, message_pump=context.messagepump
+        topic_map=context.topic_map, message_pump=context.message_pump
     )
-    context.async_runner.run_async(publisher.publish(event))
+    await publisher.publish(event)
 
 
 @when("I send a pydantic (?P<topic>.+) message to the in-memory service bus")
-def step_impl6(context, topic):
+async def step_impl11(context, topic):
     event_type = context.topic_map.resolve_type(topic)
     event = event_type(
         source="test",
@@ -196,30 +195,30 @@ def step_impl6(context, topic):
     )
 
     publisher = create_publisher_for_inmemory(
-        topic_map=context.topic_map, message_pump=context.messagepump
+        topic_map=context.topic_map, message_pump=context.message_pump
     )
-    context.async_runner.run_async(publisher.publish(event))
+    await publisher.publish(event)
 
 
 @then("the message is received by the subscriber")
-def step_impl7(context):
+async def step_impl12(context):
     try:
-        context.async_runner.run_async(asyncio.sleep(0.25))
-        result = context.async_runner.run_async(context.wait_handle.wait())
+        await asyncio.sleep(0.25)
+        result = await context.wait_handle.wait()
         assert result, "The message was not received by the subscriber in time"
     finally:
-        context.async_runner.run_async(context.consumer.stop())
+        await context.consumer.stop()
 
 
 @step("the other event handlers are not invoked")
-def step_impl8(context):
+def step_impl13(context):
     assert context.wait_handle2.is_set() is False, (
         "The other event handler was invoked, but it should not have been"
     )
 
 
 @then("the messages are received by the subscriber")
-def step_impl9(context):
+def step_impl14(context):
     assert context.wait_handle2.is_set() and context.wait_handle.is_set(), (
         "The message was not received by the subscriber in time"
     )
