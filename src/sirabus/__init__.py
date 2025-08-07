@@ -1,13 +1,8 @@
 import asyncio
 from abc import ABC, abstractmethod
-from typing import Generic, Type, TypeVar, get_args, Optional
 
-from aett.eventstore import BaseEvent, Topic
-from aett.eventstore.base_command import BaseCommand
+from aett.eventstore import Topic, BaseCommand, BaseEvent
 from pydantic import BaseModel, Field
-
-TEvent: TypeVar = TypeVar(name="TEvent", bound=BaseEvent, contravariant=True)
-TCommand: TypeVar = TypeVar(name="TCommand", bound=BaseCommand, contravariant=True)
 
 
 @Topic("command_response")
@@ -29,13 +24,13 @@ class CommandResponse(BaseModel):
         return f"CommandResponse(success={self.success}, message='{self.message}')"
 
 
-class IRouteCommands(ABC, Generic[TCommand]):
+class IRouteCommands(ABC):
     """
     Interface for routing commands. The command router expects to receive replies to commands
     """
 
     @abstractmethod
-    async def route(self, command: TCommand) -> asyncio.Future[CommandResponse]:
+    async def route[TCommand:BaseCommand](self, command: TCommand) -> asyncio.Future[CommandResponse]:
         """
         Route a command.
 
@@ -45,15 +40,10 @@ class IRouteCommands(ABC, Generic[TCommand]):
         raise NotImplementedError("This method should be overridden by subclasses.")
 
 
-class IHandleCommands(ABC, Generic[TCommand]):
+class IHandleCommands[TCommand:BaseCommand](ABC):
     """
     Interface for handling commands.
     """
-
-    message_type: Type[TCommand]
-
-    def __init_subclass__(cls, **kwargs):
-        cls.message_type = get_args(cls.__orig_bases__[0])[0]
 
     @abstractmethod
     async def handle(self, command: TCommand, headers: dict) -> CommandResponse:
@@ -64,16 +54,17 @@ class IHandleCommands(ABC, Generic[TCommand]):
         :param headers: Additional headers associated with the command.
         :return: A CommandResponse indicating the success or failure of the command handling.
         """
+
         raise NotImplementedError("This method should be overridden by subclasses.")
 
 
-class IPublishEvents(ABC, Generic[TEvent]):
+class IPublishEvents(ABC):
     """
     Interface for publishing events.
     """
 
     @abstractmethod
-    async def publish(self, event: TEvent) -> None:
+    async def publish[TEvent:BaseEvent](self, event: TEvent) -> None:
         """
         Publish an event.
 
@@ -82,15 +73,10 @@ class IPublishEvents(ABC, Generic[TEvent]):
         raise NotImplementedError("This method should be overridden by subclasses.")
 
 
-class IHandleEvents(ABC, Generic[TEvent]):
+class IHandleEvents[TEvent:BaseEvent](ABC):
     """
     Interface for handling events.
     """
-
-    message_type: Type[TEvent]
-
-    def __init_subclass__(cls, **kwargs):
-        cls.message_type = get_args(cls.__orig_bases__[0])[0]
 
     @abstractmethod
     async def handle(self, event: TEvent, headers: dict) -> None:
@@ -116,3 +102,11 @@ def generate_vhost_name(name: str, version: str) -> str:
     h = hashlib.sha256(usedforsecurity=False)
     h.update(f"{name}_{version}".encode())
     return h.hexdigest()
+
+
+def get_type_param(instance: IHandleCommands | IHandleEvents) -> type:
+    from typing import get_args
+    t = type(instance)
+    print(t)
+    orig_bases__ = t.__orig_bases__
+    return get_args(orig_bases__[0])[0]
