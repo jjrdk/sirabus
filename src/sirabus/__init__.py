@@ -107,6 +107,5 @@ def generate_vhost_name(name: str, version: str) -> str:
 def get_type_param(instance: IHandleCommands | IHandleEvents) -> type:
     from typing import get_args
     t = type(instance)
-    print(t)
     orig_bases__ = t.__orig_bases__
     return get_args(orig_bases__[0])[0]
