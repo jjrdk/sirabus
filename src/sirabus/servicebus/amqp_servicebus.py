@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Set, Callable, Tuple
+from typing import List, Optional, Set, Callable, Tuple, get_args
 
 import aio_pika
 from aett.eventstore import BaseEvent
@@ -9,7 +9,7 @@ from aio_pika.abc import (
     AbstractRobustChannel,
 )
 
-from sirabus import IHandleEvents, IHandleCommands, CommandResponse
+from sirabus import IHandleEvents, IHandleCommands, CommandResponse, get_type_param
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 from sirabus.servicebus import ServiceBus
 
@@ -42,7 +42,7 @@ class AmqpServiceBus(ServiceBus):
             message_reader=message_reader,
             topic_map=topic_map,
             handlers=handlers,
-            logger=logger,
+            logger=logger or logging.getLogger("AmqpServiceBus"),
         )
         self.__command_response_writer = command_response_writer
         self.__amqp_url = amqp_url
@@ -52,7 +52,7 @@ class AmqpServiceBus(ServiceBus):
         self.__topics = set(
             topic
             for topic in (
-                self._topic_map.get_hierarchical_topic(type(handler).message_type)
+                self._topic_map.get_hierarchical_topic(get_type_param(handler))
                 for handler in handlers
                 if isinstance(handler, (IHandleEvents, IHandleCommands))
             )

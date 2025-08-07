@@ -2,6 +2,7 @@ import threading
 
 from behave import given, then, when, use_step_matcher
 
+from sirabus import get_type_param
 from test_types import TestEventHandler, TestEvent
 
 use_step_matcher("re")
@@ -14,7 +15,7 @@ def step_impl1(context):
 
 @when("I resolve the event type for the handler")
 def step_impl2(context):
-    context.event_type = type(context.instance).message_type
+    context.event_type = get_type_param(context.instance)
 
 
 @then("the event type is resolved correctly")

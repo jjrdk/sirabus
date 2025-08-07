@@ -2,11 +2,11 @@ import datetime
 import uuid
 from typing import Optional, Tuple
 
-from aett.eventstore import Topic
+from aett.eventstore import Topic, BaseEvent, BaseCommand
 from cloudevents.pydantic import CloudEvent
 from pydantic import BaseModel, Field
 
-from sirabus import TEvent, TCommand, CommandResponse
+from sirabus import CommandResponse
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 
 
@@ -21,8 +21,8 @@ class CloudEventAttributes(BaseModel):
     reply_to: Optional[str] = Field(default=None)
 
 
-def create_event(
-    event: TEvent, topic_map: HierarchicalTopicMap
+def create_event[TEvent:BaseEvent](
+        event: TEvent, topic_map: HierarchicalTopicMap
 ) -> Tuple[str, str, str]:
     event_type = type(event)
     topic = Topic.get(event_type)
@@ -49,8 +49,8 @@ def create_event(
     return topic, hierarchical_topic, j
 
 
-def create_command(
-    command: TCommand, topic_map: HierarchicalTopicMap
+def create_command[TCommand:BaseCommand](
+        command: TCommand, topic_map: HierarchicalTopicMap
 ) -> Tuple[str, str, str]:
     command_type = type(command)
     topic = Topic.get(command_type)
@@ -78,7 +78,7 @@ def create_command(
 
 
 def create_command_response(
-    command_response: CommandResponse,
+        command_response: CommandResponse,
 ) -> Tuple[str, bytes]:
     topic = Topic.get(type(command_response))
     a = CloudEventAttributes(
@@ -99,8 +99,8 @@ def create_command_response(
 
 
 def read_command_response(
-    headers: dict,
-    response_msg: bytes,
+        headers: dict,
+        response_msg: bytes,
 ) -> CommandResponse | None:
     try:
         cloud_event = CloudEvent.model_validate_json(response_msg)

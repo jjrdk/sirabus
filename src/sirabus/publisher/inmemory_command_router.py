@@ -4,21 +4,21 @@ from typing import List, Tuple, Callable, Optional
 
 from aett.eventstore.base_command import BaseCommand
 
-from sirabus import IRouteCommands, TCommand, CommandResponse
+from sirabus import IRouteCommands, CommandResponse
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 from sirabus.message_pump import MessagePump, MessageConsumer
 
 
 class InMemoryCommandRouter(IRouteCommands):
     def __init__(
-        self,
-        message_pump: MessagePump,
-        topic_map: HierarchicalTopicMap,
-        command_writer: Callable[
-            [BaseCommand, HierarchicalTopicMap], Tuple[str, str, str]
-        ],
-        response_reader: Callable[[dict, bytes], CommandResponse | None],
-        logger: Optional[logging.Logger] = None,
+            self,
+            message_pump: MessagePump,
+            topic_map: HierarchicalTopicMap,
+            command_writer: Callable[
+                [BaseCommand, HierarchicalTopicMap], Tuple[str, str, str]
+            ],
+            response_reader: Callable[[dict, bytes], CommandResponse | None],
+            logger: Optional[logging.Logger] = None,
     ) -> None:
         self._response_reader = response_reader
         self._command_writer = command_writer
@@ -27,7 +27,7 @@ class InMemoryCommandRouter(IRouteCommands):
         self._logger = logger or logging.getLogger("InMemoryCommandRouter")
         self._consumers: List[MessageConsumer] = []
 
-    async def route(self, command: TCommand) -> asyncio.Future[CommandResponse]:
+    async def route[TCommand:BaseCommand](self, command: TCommand) -> asyncio.Future[CommandResponse]:
         response_future = asyncio.get_event_loop().create_future()
         consumer = ResponseConsumer(
             parent_cleanup=self._remove_consumer,
@@ -42,9 +42,9 @@ class InMemoryCommandRouter(IRouteCommands):
         self._message_pump.publish((headers, message))
         return response_future
 
-    def _create_message(
-        self,
-        command: TCommand,  # type: ignore
+    def _create_message[TCommand:BaseCommand](
+            self,
+            command: TCommand,  # type: ignore
     ) -> Tuple[dict, bytes]:
         _, __, j = self._command_writer(command, self._topic_map)
         return {}, j.encode()
@@ -55,11 +55,11 @@ class InMemoryCommandRouter(IRouteCommands):
 
 class ResponseConsumer(MessageConsumer):
     def __init__(
-        self,
-        parent_cleanup: Callable[[MessageConsumer], None],
-        message_pump: MessagePump,
-        future: asyncio.Future[CommandResponse],
-        response_reader: Callable[[dict, bytes], CommandResponse | None],
+            self,
+            parent_cleanup: Callable[[MessageConsumer], None],
+            message_pump: MessagePump,
+            future: asyncio.Future[CommandResponse],
+            response_reader: Callable[[dict, bytes], CommandResponse | None],
     ) -> None:
         super().__init__()
         self._response_reader = response_reader
@@ -68,11 +68,11 @@ class ResponseConsumer(MessageConsumer):
         self._message_pump = message_pump
 
     async def handle_message(
-        self,
-        headers: dict,
-        body: bytes,
-        correlation_id: str | None,
-        reply_to: str | None,
+            self,
+            headers: dict,
+            body: bytes,
+            correlation_id: str | None,
+            reply_to: str | None,
     ) -> None:
         if reply_to == self.id:
             response = self._response_reader(headers, body)

@@ -1,7 +1,5 @@
 import logging
 
-from aett.eventstore import BaseEvent
-
 from sirabus import IPublishEvents
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 from sirabus.message_pump import MessagePump
@@ -11,7 +9,7 @@ from sirabus.publisher.inmemory_publisher import InMemoryPublisher
 
 def create_publisher_for_amqp(
     amqp_url: str, topic_map: HierarchicalTopicMap, logger: logging.Logger | None = None
-) -> IPublishEvents[BaseEvent]:
+) -> IPublishEvents:
     """
     Creates a CloudEventPublisher for AMQP.
     :param amqp_url: The AMQP URL.
@@ -30,7 +28,7 @@ def create_publisher_for_inmemory(
     message_pump: MessagePump,
     topic_map: HierarchicalTopicMap,
     logger: logging.Logger | None = None,
-) -> IPublishEvents[BaseEvent]:
+) -> IPublishEvents:
     """
     Creates a CloudEventPublisher for AMQP.
     :param message_pump: The message pump to use for in-memory publishing.
