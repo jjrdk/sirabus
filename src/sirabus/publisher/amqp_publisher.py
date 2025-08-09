@@ -35,8 +35,8 @@ class AmqpPublisher(IPublishEvents):
 
         connection = await connect_robust(url=self.__amqp_url)
         channel = await connection.channel()
-        exchange = await channel.get_exchange(name="amq.topic", ensure=True)
-        self.__logger.debug("Channel opened for publishing CloudEvent.")
+        exchange = await channel.get_exchange(name="amq.topic", ensure=False)
+        self.__logger.debug("Channel opened for publishing event.")
         response = await exchange.publish(
             message=Message(body=j.encode(), headers={"topic": topic}),
             routing_key=hierarchical_topic,

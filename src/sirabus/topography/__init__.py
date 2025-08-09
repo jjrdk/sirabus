@@ -25,8 +25,8 @@ class TopographyBuilder:
         exchanges: Set[str] = set()
         await self._declare_exchanges(channel, exchanges)
         relationships = self.__topic_map.build_parent_child_relationships()
-        for key in relationships:
-            for child in relationships[key]:
+        for parent in relationships:
+            for child in relationships[parent]:
                 # Declare the child exchange if it does not exist
                 if child not in exchanges:
                     await self._declare_exchange(
@@ -35,9 +35,9 @@ class TopographyBuilder:
                 # Bind the child exchange to the parent exchange
                 destination = await channel.get_exchange(child)
                 bind_response = await destination.bind(
-                    exchange=key, routing_key=f"{child}.#"
+                    exchange=parent, routing_key=f"{child}.#"
                 )
-                logging.debug(f"Bound {child} to {key} with response {bind_response}")
+                logging.debug(f"Bound {child} to {parent} with response {bind_response}")
         await channel.close()
 
     async def _declare_exchanges(self, channel, exchanges):

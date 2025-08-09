@@ -22,7 +22,7 @@ def create_event[TEvent:BaseEvent](event: TEvent, topic_map: HierarchicalTopicMa
 
 def read_event_message(topic_map: HierarchicalTopicMap, properties: dict, body: bytes) -> Tuple[dict, BaseEvent]:
     topic = properties["topic"]
-    event_type = topic_map.resolve_type(topic)
+    event_type = topic_map.get(topic)
     if event_type is None:
         raise ValueError(f"Event type {topic} not found in topic map")
     if event_type and not issubclass(event_type, BaseModel):
