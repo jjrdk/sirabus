@@ -16,7 +16,7 @@ def _transform_cloudevent_message(
     topic_map: HierarchicalTopicMap, properties: dict, body: bytes
 ) -> Tuple[dict, BaseEvent]:
     ce = CloudEvent.model_validate_json(body)
-    event_type = topic_map.resolve_type(ce.type)
+    event_type = topic_map.get(ce.type)
     if event_type is None:
         raise ValueError(f"Event type {ce.type} not found in topic map")
     if event_type and not issubclass(event_type, BaseModel):

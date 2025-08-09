@@ -81,7 +81,7 @@ class AmqpServiceBus(ServiceBus):
         self._logger.debug("Channel opened for consuming messages.")
         queue = await self.__channel.declare_queue(self.__queue_name, exclusive=True)
         for topic in self.__topics:
-            await queue.bind(exchange=topic, routing_key=topic)
+            await queue.bind(exchange=topic, routing_key=f"{topic}.#")
             self._logger.debug(f"Queue {self.__queue_name} bound to topic {topic}.")
         self.__consumer_tag = await queue.consume(callback=self.__inner_handle_message)
 

@@ -33,8 +33,7 @@ def step_impl1(context):
     context.wait_handle = asyncio.Event()
     context.wait_handle2 = asyncio.Event()
     context.topic_map = HierarchicalTopicMap()
-    container = RabbitMqContainer(vhost=generate_vhost_name("test", "0.0.0"))
-    container.start()
+    container = RabbitMqContainer(vhost=generate_vhost_name("test", "0.0.0")).start()
     context.containers.append(container)
     params = container.get_connection_params()
     creds = params.credentials
@@ -57,10 +56,10 @@ def step_impl(context):
 
 @step("events have been registered in the hierarchical topic map")
 def step_impl2(context):
-    context.topic_map.add(Topic.get(TestEvent), TestEvent)
-    context.topic_map.add(Topic.get(SubTestEvent), SubTestEvent)
-    context.topic_map.add(Topic.get(OtherTestEvent), OtherTestEvent)
-    context.topic_map.add(Topic.get(NestedTestEvent), NestedTestEvent)
+    context.topic_map.register(TestEvent)
+    context.topic_map.register( SubTestEvent)
+    context.topic_map.register(OtherTestEvent)
+    context.topic_map.register(NestedTestEvent)
 
 
 @step("a cloudevent amqp broker is configured with the hierarchical topic map")
@@ -133,7 +132,7 @@ def step_impl4(context):
 
 @when("I send a cloudevent (?P<topic>.+) message to the amqp service bus")
 def step_impl5(context, topic):
-    event_type = context.topic_map.resolve_type(topic)
+    event_type = context.topic_map.get(topic)
     event = event_type(
         source="test",
         timestamp=datetime.datetime.now(datetime.timezone.utc),
@@ -151,7 +150,7 @@ def step_impl5(context, topic):
 
 @when("I send a pydantic (?P<topic>.+) message to the amqp service bus")
 def step_impl5(context, topic):
-    event_type = context.topic_map.resolve_type(topic)
+    event_type = context.topic_map.get(topic)
     event = event_type(
         source="test",
         timestamp=datetime.datetime.now(datetime.timezone.utc),
@@ -167,7 +166,7 @@ def step_impl5(context, topic):
 
 @when("I send a cloudevent (?P<topic>.+) message to the in-memory service bus")
 def step_impl6(context, topic):
-    event_type = context.topic_map.resolve_type(topic)
+    event_type = context.topic_map.get(topic)
     event = event_type(
         source="test",
         timestamp=datetime.datetime.now(datetime.timezone.utc),
@@ -185,7 +184,7 @@ def step_impl6(context, topic):
 
 @when("I send a pydantic (?P<topic>.+) message to the in-memory service bus")
 def step_impl6(context, topic):
-    event_type = context.topic_map.resolve_type(topic)
+    event_type = context.topic_map.get(topic)
     event = event_type(
         source="test",
         timestamp=datetime.datetime.now(datetime.timezone.utc),
