@@ -23,6 +23,8 @@ class HierarchicalTopicMap(TopicMap):
         Exclude the base class from the topic hierarchy.
         :param t: The class to exclude.
         """
+        if not isinstance(t, type):
+            raise TypeError(f"except_base expects a type, got {type(t).__name__}")
         if t not in self.__excepted_bases__:
             self.__excepted_bases__.add(t)
 

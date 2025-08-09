@@ -57,7 +57,7 @@ def step_impl(context):
 @step("events have been registered in the hierarchical topic map")
 def step_impl2(context):
     context.topic_map.register(TestEvent)
-    context.topic_map.register( SubTestEvent)
+    context.topic_map.register(SubTestEvent)
     context.topic_map.register(OtherTestEvent)
     context.topic_map.register(NestedTestEvent)
 
