@@ -4,7 +4,7 @@ Feature: Event Handling
     Given a running amqp message broker
     And events have been registered in the hierarchical topic map
     And a cloudevent amqp broker is configured with the hierarchical topic map
-    When I send a cloudevent nested message to the amqp service bus
+    When I send a cloudevent test.test_sub.nested message to the amqp service bus
     Then the message is received by the subscriber
 
   Scenario: AMQP message publishing and subscription with pydantic

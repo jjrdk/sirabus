@@ -30,7 +30,9 @@ class IRouteCommands(ABC):
     """
 
     @abstractmethod
-    async def route[TCommand:BaseCommand](self, command: TCommand) -> asyncio.Future[CommandResponse]:
+    async def route[TCommand: BaseCommand](
+        self, command: TCommand
+    ) -> asyncio.Future[CommandResponse]:
         """
         Route a command.
 
@@ -40,7 +42,7 @@ class IRouteCommands(ABC):
         raise NotImplementedError("This method should be overridden by subclasses.")
 
 
-class IHandleCommands[TCommand:BaseCommand](ABC):
+class IHandleCommands[TCommand: BaseCommand](ABC):
     """
     Interface for handling commands.
     """
@@ -64,7 +66,7 @@ class IPublishEvents(ABC):
     """
 
     @abstractmethod
-    async def publish[TEvent:BaseEvent](self, event: TEvent) -> None:
+    async def publish[TEvent: BaseEvent](self, event: TEvent) -> None:
         """
         Publish an event.
 
@@ -73,7 +75,7 @@ class IPublishEvents(ABC):
         raise NotImplementedError("This method should be overridden by subclasses.")
 
 
-class IHandleEvents[TEvent:BaseEvent](ABC):
+class IHandleEvents[TEvent: BaseEvent](ABC):
     """
     Interface for handling events.
     """
@@ -106,6 +108,7 @@ def generate_vhost_name(name: str, version: str) -> str:
 
 def get_type_param(instance: IHandleCommands | IHandleEvents) -> type:
     from typing import get_args
+
     t = type(instance)
     orig_bases__ = t.__orig_bases__
     return get_args(orig_bases__[0])[0]

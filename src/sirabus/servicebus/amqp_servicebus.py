@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Set, Callable, Tuple, get_args
+from typing import List, Optional, Set, Callable, Tuple
 
 import aio_pika
 from aett.eventstore import BaseEvent
@@ -52,7 +52,7 @@ class AmqpServiceBus(ServiceBus):
         self.__topics = set(
             topic
             for topic in (
-                self._topic_map.get_hierarchical_topic(get_type_param(handler))
+                self._topic_map.get_from_type(get_type_param(handler))
                 for handler in handlers
                 if isinstance(handler, (IHandleEvents, IHandleCommands))
             )

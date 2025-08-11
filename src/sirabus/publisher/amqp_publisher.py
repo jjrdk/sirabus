@@ -14,18 +14,18 @@ class AmqpPublisher(IPublishEvents):
     """
 
     def __init__(
-            self,
-            amqp_url: str,
-            topic_map: HierarchicalTopicMap,
-            event_writer: Callable[[BaseEvent, HierarchicalTopicMap], Tuple[str, str, str]],
-            logger: logging.Logger | None = None,
+        self,
+        amqp_url: str,
+        topic_map: HierarchicalTopicMap,
+        event_writer: Callable[[BaseEvent, HierarchicalTopicMap], Tuple[str, str, str]],
+        logger: logging.Logger | None = None,
     ) -> None:
         self._event_writer = event_writer
         self.__amqp_url = amqp_url
         self.__topic_map = topic_map
         self.__logger = logger or logging.getLogger("AmqpPublisher")
 
-    async def publish[TEvent:BaseEvent](self, event: TEvent) -> None:
+    async def publish[TEvent: BaseEvent](self, event: TEvent) -> None:
         """
         Publishes the event to the configured topic.
         :param event: The event to publish.

@@ -21,12 +21,12 @@ class CloudEventAttributes(BaseModel):
     reply_to: Optional[str] = Field(default=None)
 
 
-def create_event[TEvent:BaseEvent](
-        event: TEvent, topic_map: HierarchicalTopicMap
+def create_event[TEvent: BaseEvent](
+    event: TEvent, topic_map: HierarchicalTopicMap
 ) -> Tuple[str, str, str]:
     event_type = type(event)
     topic = Topic.get(event_type)
-    hierarchical_topic = topic_map.get_hierarchical_topic(event_type)
+    hierarchical_topic = topic_map.get_from_type(event_type)
 
     if not hierarchical_topic:
         raise ValueError(
@@ -49,12 +49,12 @@ def create_event[TEvent:BaseEvent](
     return topic, hierarchical_topic, j
 
 
-def create_command[TCommand:BaseCommand](
-        command: TCommand, topic_map: HierarchicalTopicMap
+def create_command[TCommand: BaseCommand](
+    command: TCommand, topic_map: HierarchicalTopicMap
 ) -> Tuple[str, str, str]:
     command_type = type(command)
     topic = Topic.get(command_type)
-    hierarchical_topic = topic_map.get_hierarchical_topic(command_type)
+    hierarchical_topic = topic_map.get_from_type(command_type)
 
     if not hierarchical_topic:
         raise ValueError(
@@ -78,7 +78,7 @@ def create_command[TCommand:BaseCommand](
 
 
 def create_command_response(
-        command_response: CommandResponse,
+    command_response: CommandResponse,
 ) -> Tuple[str, bytes]:
     topic = Topic.get(type(command_response))
     a = CloudEventAttributes(
@@ -99,8 +99,8 @@ def create_command_response(
 
 
 def read_command_response(
-        headers: dict,
-        response_msg: bytes,
+    headers: dict,
+    response_msg: bytes,
 ) -> CommandResponse | None:
     try:
         cloud_event = CloudEvent.model_validate_json(response_msg)
