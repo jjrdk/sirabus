@@ -47,7 +47,7 @@ class TestEventHandler(IHandleEvents[TestEvent]):
         self.wait_handle = wait_handle
         super().__init__()
 
-    async def handle[TEvent:BaseEvent](self, event: TEvent, headers: dict) -> None:
+    async def handle[TEvent: BaseEvent](self, event: TEvent, headers: dict) -> None:
         self.wait_handle.set()
         await asyncio.sleep(0)
 

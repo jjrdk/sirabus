@@ -18,14 +18,14 @@ from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 
 class AmqpCommandRouter(IRouteCommands):
     def __init__(
-            self,
-            amqp_url: str,
-            topic_map: HierarchicalTopicMap,
-            message_writer: Callable[
-                [BaseCommand, HierarchicalTopicMap], Tuple[str, str, str]
-            ],
-            response_reader: Callable[[dict, bytes], CommandResponse | None],
-            logger: Optional[logging.Logger] = None,
+        self,
+        amqp_url: str,
+        topic_map: HierarchicalTopicMap,
+        message_writer: Callable[
+            [BaseCommand, HierarchicalTopicMap], Tuple[str, str, str]
+        ],
+        response_reader: Callable[[dict, bytes], CommandResponse | None],
+        logger: Optional[logging.Logger] = None,
     ) -> None:
         self._response_reader = response_reader
         self._message_writer = message_writer
@@ -42,7 +42,9 @@ class AmqpCommandRouter(IRouteCommands):
             self.__connection = await connect_robust(url=self.__amqp_url)
         return self.__connection
 
-    async def route[TCommand:BaseCommand](self, command: TCommand) -> asyncio.Future[CommandResponse]:
+    async def route[TCommand: BaseCommand](
+        self, command: TCommand
+    ) -> asyncio.Future[CommandResponse]:
         loop = asyncio.get_event_loop()
         connection = await self._get_connection()
         channel = await connection.channel()
@@ -56,7 +58,7 @@ class AmqpCommandRouter(IRouteCommands):
             )
         except ValueError as ve:
             self._logger.exception(
-                f"Error creating message for command {command}: {ve}"
+                f"Error creating message for command {command}", exc_info=ve
             )
             future = loop.create_future()
             future.set_result(CommandResponse(success=False, message="unknown command"))
