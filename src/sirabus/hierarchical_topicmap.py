@@ -112,7 +112,6 @@ class HierarchicalTopicMap:
     #     :return: A list of all the hierarchical topics.
     #     """
     #     for topic in self.get_all_types():
-    #         yield self._resolve_topics(topic)
 
     def build_parent_child_relationships(self) -> Dict[str, Set[str]]:
         """
