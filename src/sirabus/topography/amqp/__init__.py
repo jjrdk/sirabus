@@ -37,7 +37,9 @@ class TopographyBuilder:
                 bind_response = await destination.bind(
                     exchange=parent, routing_key=f"{child}.#"
                 )
-                logging.debug(f"Bound {child} to {parent} with response {bind_response}")
+                logging.debug(
+                    f"Bound {child} to {parent} with response {bind_response}"
+                )
         await channel.close()
 
     async def _declare_exchanges(self, channel, exchanges):

@@ -7,6 +7,13 @@ Feature: Event Handling
     When I send a cloudevent nested message to the amqp service bus
     Then the message is received by the subscriber
 
+  Scenario: SQS message publishing and subscription with cloudevents
+    Given a running SQS message broker
+    And events have been registered in the hierarchical topic map
+    And a cloudevent SQS broker is configured with the hierarchical topic map
+    When I send a cloudevent nested message to the SQS service bus
+    Then the message is received by the subscriber
+
   Scenario: AMQP message publishing and subscription with pydantic
     Given a running amqp message broker
     And events have been registered in the hierarchical topic map

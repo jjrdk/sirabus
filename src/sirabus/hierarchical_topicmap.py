@@ -15,6 +15,7 @@ class HierarchicalTopicMap(TopicMap):
 
     def __init__(self) -> None:
         super().__init__()
+        self.__metadata: Dict[str, Dict[str, Any]] = {}
         self.__excepted_bases__: Set[type] = {object, BaseModel, BaseEvent, BaseCommand}
         self.add(Topic.get(CommandResponse), CommandResponse)
 
@@ -27,6 +28,27 @@ class HierarchicalTopicMap(TopicMap):
             raise TypeError(f"except_base expects a type, got {type(t).__name__}")
         if t not in self.__excepted_bases__:
             self.__excepted_bases__.add(t)
+
+    def set_metadata(self, topic: str, key: str, value: Any) -> Self:
+        """
+        Sets metadata for the given topic.
+        :param topic: The topic to set metadata for.
+        :param key: The key of the metadata.
+        :param value: The value of the metadata.
+        """
+        if topic not in self.__metadata:
+            self.__metadata[topic] = {}
+        self.__metadata[topic][key] = value
+        return self
+
+    def get_metadata(self, topic: str, key: str) -> Any:
+        """
+        Gets metadata for the given topic.
+        :param topic: The topic to get metadata for.
+        :param key: The key of the metadata.
+        :return: The value of the metadata.
+        """
+        return self.__metadata.get(topic, {}).get(key, None)
 
     def register(self, instance: Any) -> Self:
         t = instance if isinstance(instance, type) else type(instance)

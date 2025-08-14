@@ -7,7 +7,7 @@ from aett.eventstore import Topic
 from behave import step, when, then, use_step_matcher
 from steps.command_handlers import StatusCommandHandler, InfoCommandHandler
 from steps.test_types import StatusCommand, InvalidCommand, InfoCommand
-from sirabus.topography import TopographyBuilder
+from sirabus.topography.amqp import TopographyBuilder
 
 use_step_matcher("re")
 

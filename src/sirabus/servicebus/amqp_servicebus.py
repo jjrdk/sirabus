@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Set, Callable, Tuple, get_args
+from typing import List, Optional, Set, Callable, Tuple
 
 import aio_pika
 from aett.eventstore import BaseEvent
