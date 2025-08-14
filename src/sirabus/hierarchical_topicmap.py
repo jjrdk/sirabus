@@ -39,8 +39,6 @@ class HierarchicalTopicMap:
 
     def register(self, instance: Any) -> Self:
         t = instance if isinstance(instance, type) else type(instance)
-        # topic = Topic.get(t)
-        # if topic not in self.get_all():
         hierarchical_topic = self._get_hierarchical_topic(t)
         if hierarchical_topic is not None:
             self.add(hierarchical_topic, t)
@@ -105,13 +103,6 @@ class HierarchicalTopicMap:
         if instance in self._topics.values():
             return next(topic for topic, cls in self._topics.items() if cls is instance)
         return self._resolve_topics(instance)
-    #
-    # def get_all_hierarchical_topics(self) -> Iterable[str]:
-    #     """
-    #     Gets all the hierarchical topics in the map.
-    #     :return: A list of all the hierarchical topics.
-    #     """
-    #     for topic in self.get_all_types():
 
     def build_parent_child_relationships(self) -> Dict[str, Set[str]]:
         """

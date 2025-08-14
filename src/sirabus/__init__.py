@@ -107,6 +107,13 @@ def generate_vhost_name(name: str, version: str) -> str:
 
 
 def get_type_param(instance: IHandleCommands | IHandleEvents) -> type:
+    """
+    Extracts the type parameter from an instance of IHandleCommands or IHandleEvents.
+    This function uses the `get_args` function from the `typing` module to retrieve the
+    type parameter from the generic type of the instance.
+    :param instance: An instance of IHandleCommands or IHandleEvents.
+    :return: The type parameter of the instance.
+    """
     from typing import get_args
 
     t = type(instance)
