@@ -41,7 +41,6 @@ class HierarchicalTopicMap:
         t = instance if isinstance(instance, type) else type(instance)
         # topic = Topic.get(t)
         # if topic not in self.get_all():
-        #     self.add(topic, t)
         hierarchical_topic = self._get_hierarchical_topic(t)
         if hierarchical_topic is not None:
             self.add(hierarchical_topic, t)
