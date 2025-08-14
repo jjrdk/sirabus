@@ -1,9 +1,8 @@
 import logging
 
-from sirabus import IPublishEvents
+from sirabus import IPublishEvents, SqsConfig
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 from sirabus.message_pump import MessagePump
-from sirabus.publisher.amqp_publisher import AmqpPublisher
 from sirabus.publisher.inmemory_publisher import InMemoryPublisher
 
 
@@ -18,9 +17,30 @@ def create_publisher_for_amqp(
     :return: A CloudEventPublisher instance.
     """
     from sirabus.publisher.pydantic_serialization import create_event
+    from sirabus.publisher.amqp_publisher import AmqpPublisher
 
     return AmqpPublisher(
         amqp_url=amqp_url, topic_map=topic_map, logger=logger, event_writer=create_event
+    )
+
+
+def create_publisher_for_sqs(
+    config: SqsConfig,
+    topic_map: HierarchicalTopicMap,
+    logger: logging.Logger | None = None,
+) -> IPublishEvents:
+    """
+    Creates a CloudEventPublisher for SQS.
+    :param config: The SQS configuration.
+    :param topic_map: The hierarchical topic map.
+    :param logger: Optional logger.
+    :return: A CloudEventPublisher instance.
+    """
+    from sirabus.publisher.pydantic_serialization import create_event
+    from sirabus.publisher.sqs_publisher import SqsPublisher
+
+    return SqsPublisher(
+        sqs_config=config, topic_map=topic_map, logger=logger, event_writer=create_event
     )
 
 

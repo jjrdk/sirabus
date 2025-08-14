@@ -19,16 +19,16 @@ class SqsServiceBus(ServiceBus):
     """
 
     def __init__(
-            self,
-            config: SqsConfig,
-            topic_map: HierarchicalTopicMap,
-            handlers: List[IHandleEvents | IHandleCommands],
-            message_reader: Callable[
-                [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent]
-            ],
-            command_response_writer: Callable[[CommandResponse], Tuple[str, bytes]],
-            prefetch_count: int = 10,
-            logger: Optional[logging.Logger] = None,
+        self,
+        config: SqsConfig,
+        topic_map: HierarchicalTopicMap,
+        handlers: List[IHandleEvents | IHandleCommands],
+        message_reader: Callable[
+            [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent]
+        ],
+        command_response_writer: Callable[[CommandResponse], Tuple[str, bytes]],
+        prefetch_count: int = 10,
+        logger: Optional[logging.Logger] = None,
     ) -> None:
         """Create a new instance of the consumer class, passing in the AMQP
         URL used to connect to RabbitMQ.
@@ -67,7 +67,9 @@ class SqsServiceBus(ServiceBus):
         sqs_client = self.__config.to_sqs_client()
         declared_queue_response = sqs_client.create_queue(QueueName=self.__queue_name)
         queue_url = declared_queue_response["QueueUrl"]
-        queue_attributes = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["QueueArn"])
+        queue_attributes = sqs_client.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=["QueueArn"]
+        )
         relationships = self._topic_map.build_parent_child_relationships()
         topic_hierarchy = set(self._get_topic_hierarchy(self.__topics, relationships))
         for topic in topic_hierarchy:
@@ -78,7 +80,7 @@ class SqsServiceBus(ServiceBus):
         self.__sqs_thread.start()
 
     def _get_topic_hierarchy(
-            self, topics: Set[str], relationships: Dict[str, Set[str]]
+        self, topics: Set[str], relationships: Dict[str, Set[str]]
     ) -> Iterable[str]:
         """
         Returns the hierarchy of topics for the given set of topics.
@@ -90,7 +92,7 @@ class SqsServiceBus(ServiceBus):
             yield from self._get_child_hierarchy(topic, relationships)
 
     def _get_child_hierarchy(
-            self, topic: str, relationships: Dict[str, Set[str]]
+        self, topic: str, relationships: Dict[str, Set[str]]
     ) -> Iterable[str]:
         children = relationships.get(topic, set())
         if any(children):
@@ -135,20 +137,19 @@ class SqsServiceBus(ServiceBus):
                 continue
             for message in messages:
                 body = json.loads(message.get("Body", None))
-                message_attributes = body.get("MessageAttributes", {})
+                message_attributes: Dict[str, str] = {}
+                for key, value in body.get("MessageAttributes", {}).items():
+                    if value["Value"] is not None:
+                        message_attributes[key] = value.get("Value", None)
                 try:
                     loop.run_until_complete(
                         self.handle_message(
                             headers=message_attributes,
                             body=body.get("Message", None),
-                            correlation_id=message_attributes.get(
-                                "CorrelationId", None
-                            )["Value"]
+                            correlation_id=message_attributes.get("CorrelationId", None)
                             if "CorrelationId" in message_attributes
                             else None,
-                            reply_to=message_attributes.get("ReplyTo", None)[
-                                "Value"
-                            ]
+                            reply_to=message_attributes.get("ReplyTo", None)
                             if "ReplyTo" in message_attributes
                             else None,
                         )
@@ -165,7 +166,7 @@ class SqsServiceBus(ServiceBus):
         self._stopped = True
 
     async def send_command_response(
-            self, response: CommandResponse, correlation_id: str | None, reply_to: str
+        self, response: CommandResponse, correlation_id: str | None, reply_to: str
     ):
         self._logger.debug(
             f"Response published to {reply_to} with correlation_id {correlation_id}."
@@ -185,26 +186,3 @@ class SqsServiceBus(ServiceBus):
             h.update(topic.encode())
         hashed_topics = h.hexdigest()
         return "sqs_" + hashed_topics
-
-
-def create_servicebus_for_sqs_cloudevent(
-        config: SqsConfig,
-        topic_map: HierarchicalTopicMap,
-        handlers: List[IHandleEvents | IHandleCommands],
-        prefetch_count: int = 10,
-        logger: Optional[logging.Logger] = None,
-) -> ServiceBus:
-    from sirabus.publisher.cloudevent_serialization import (
-        write_cloudevent_message,
-        create_command_response,
-    )
-
-    return SqsServiceBus(
-        config=config,
-        topic_map=topic_map,
-        handlers=handlers,
-        message_reader=write_cloudevent_message,
-        command_response_writer=create_command_response,
-        prefetch_count=prefetch_count,
-        logger=logger or logging.getLogger("SqsServiceBus"),
-    )

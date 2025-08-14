@@ -35,7 +35,7 @@ def step_impl1(context):
 
 
 @step("a pydantic amqp router is configured with the hierarchical topic map")
-def step_impl1(context):
+def step_impl2(context):
     builder = TopographyBuilder(
         amqp_url=context.connection_string, topic_map=context.topic_map
     )
@@ -55,7 +55,7 @@ def step_impl1(context):
 
 
 @step("commands have been registered in the cloudevents AMQP hierarchical topic map")
-def step_impl2(context):
+def step_impl3(context):
     context.topic_map.add(Topic.get(StatusCommand), StatusCommand)
     context.topic_map.add(Topic.get(InfoCommand), InfoCommand)
     from sirabus.publisher.cloudevent_router import create_amqp_router
@@ -67,7 +67,7 @@ def step_impl2(context):
 
 
 @step("commands have been registered in the pydantic AMQP hierarchical topic map")
-def step_impl2(context):
+def step_impl4(context):
     context.topic_map.add(Topic.get(StatusCommand), StatusCommand)
     context.topic_map.add(Topic.get(InfoCommand), InfoCommand)
     from sirabus.publisher.pydantic_router import create_amqp_router
@@ -79,21 +79,21 @@ def step_impl2(context):
 
 
 @step("commands have been registered in the in-memory hierarchical topic map")
-def step_impl3(context):
+def step_impl5(context):
     context.topic_map.add(Topic.get(StatusCommand), StatusCommand)
     context.topic_map.add(Topic.get(InfoCommand), InfoCommand)
 
     from sirabus.publisher.cloudevent_router import create_inmemory_router
 
     context.router = create_inmemory_router(
-        message_pump=context.messagepump,
+        message_pump=context.message_pump,
         topic_map=context.topic_map,
         logger=logging.getLogger("test"),
     )
 
 
 @when("I send the command (?P<topic>.+)")
-def step_impl4(context, topic):
+def step_impl6(context, topic):
     command_type = context.topic_map.get(topic) or InvalidCommand
     context.future = context.async_runner.run_async(
         context.router.route(
@@ -108,7 +108,7 @@ def step_impl4(context, topic):
 
 
 @then('I should receive the (?P<reply_type>error|reply) "(?P<message>.+?)"')
-def step_impl5(context, reply_type, message):
+def step_impl7(context, reply_type, message):
     def callback(r):
         context.response = r.result()
         context.wait_handle.set()
@@ -124,7 +124,7 @@ def step_impl5(context, reply_type, message):
 
 
 @when('I send the commands "(?P<topic1>.+?)", "(?P<topic2>.+?)"')
-def step_impl6(context, topic1, topic2):
+def step_impl8(context, topic1, topic2):
     command_type1 = context.topic_map.get(topic1)
     context.future1 = context.async_runner.run_async(
         context.router.route(
@@ -150,7 +150,7 @@ def step_impl6(context, topic1, topic2):
 
 
 @then('I should receive the replies "(?P<msg1>.+?)", "(?P<msg2>.+?)"')
-def step_impl7(context, msg1, msg2):
+def step_impl9(context, msg1, msg2):
     def callback1(r):
         context.response1 = r.result()
         context.wait_handle.set()

@@ -10,13 +10,13 @@ Feature: Send commands and receive responses
   Scenario: Send an AMQP command and receive a response with pydantic
     Given a running amqp message broker
     And commands have been registered in the pydantic AMQP hierarchical topic map
-    And a pydantic amqp router is configured with the hierarchical topic map
+    And a pydantic amqp service bus is configured with the hierarchical topic map
     When I send the command get_status
     Then I should receive the reply "status: ok"
 
   Scenario: Send an in-memory command and receive a response
     Given a running in-memory message broker
-    And a cloudevent in-memory broker is configured with the hierarchical topic map
+    And a cloudevent in-memory service bus is configured with the hierarchical topic map
     And commands have been registered in the in-memory hierarchical topic map
     When I send the command get_status
     Then I should receive the reply "status: ok"

@@ -1,5 +1,4 @@
 import logging
-import uuid
 from typing import Callable, Tuple
 
 from aett.eventstore import BaseEvent
@@ -35,13 +34,23 @@ class SqsPublisher(IPublishEvents):
         topic, hierarchical_topic, j = self._event_writer(event, self.__topic_map)
         sns_client = self.__sqs_config.to_sns_client()
         import json
+
         metadata = self.__topic_map.get_metadata(hierarchical_topic, "arn")
         response = sns_client.publish(
             TopicArn=metadata,
-            Message=json.dumps({"default":j}),
+            Message=json.dumps({"default": j}),
             Subject=hierarchical_topic,
             MessageStructure="json",
-            MessageAttributes={"CorrelationId": {"StringValue": event.correlation_id,'DataType': 'String'}},
+            MessageAttributes={
+                "CorrelationId": {
+                    "StringValue": event.correlation_id,
+                    "DataType": "String",
+                },
+                "topic": {
+                    "StringValue": self.__topic_map.get_hierarchical_topic(type(event)),
+                    "DataType": "String",
+                },
+            },
         )
         self.__logger.debug(f"Published {response}")
 

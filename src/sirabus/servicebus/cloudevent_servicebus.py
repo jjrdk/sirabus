@@ -1,7 +1,7 @@
 import logging
-from typing import List
+from typing import List, Optional
 
-from sirabus import IHandleEvents, IHandleCommands
+from sirabus import IHandleEvents, IHandleCommands, SqsConfig
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 from sirabus.message_pump import MessagePump
 from sirabus.servicebus import ServiceBus
@@ -30,17 +30,44 @@ def create_servicebus_for_amqp_cloudevent(
     )
 
 
-def create_servicebus_for_memory_cloudevent(
+def create_servicebus_for_sqs(
+    config: SqsConfig,
+    topic_map: HierarchicalTopicMap,
+    handlers: List[IHandleEvents | IHandleCommands],
+    prefetch_count: int = 10,
+    logger: Optional[logging.Logger] = None,
+) -> ServiceBus:
+    from sirabus.publisher.cloudevent_serialization import (
+        write_cloudevent_message,
+        create_command_response,
+    )
+
+    from sirabus.servicebus.sqs_servicebus import SqsServiceBus
+
+    return SqsServiceBus(
+        config=config,
+        topic_map=topic_map,
+        handlers=handlers,
+        message_reader=write_cloudevent_message,
+        command_response_writer=create_command_response,
+        prefetch_count=prefetch_count,
+        logger=logger or logging.getLogger("SqsServiceBus"),
+    )
+
+
+def create_servicebus_for_inmemory(
     topic_map: HierarchicalTopicMap,
     handlers: List[IHandleEvents | IHandleCommands],
     message_pump: MessagePump,
 ) -> ServiceBus:
     from sirabus.publisher.cloudevent_serialization import create_command_response
 
+    from sirabus.publisher.cloudevent_serialization import write_cloudevent_message
+
     return InMemoryServiceBus(
         topic_map=topic_map,
         handlers=handlers,
-        message_reader=_transform_cloudevent_message,
+        message_reader=write_cloudevent_message,
         response_writer=create_command_response,
         message_pump=message_pump,
         logger=logging.getLogger("InMemoryServiceBus"),

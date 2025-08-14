@@ -91,7 +91,9 @@ class ServiceBus(abc.ABC):
             ],
             return_exceptions=True,
         )
-        self._logger.debug("Event handled",)
+        self._logger.debug(
+            "Event handled",
+        )
 
     @abc.abstractmethod
     async def send_command_response(
