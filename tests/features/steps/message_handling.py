@@ -83,7 +83,7 @@ def set_up_sqs_broker(context):
 
 
 @step("events have been registered in the hierarchical topic map")
-def step_impl3(context):
+def step_impl2(context):
     context.topic_map.register(TestEvent)
     context.topic_map.register(SubTestEvent)
     context.topic_map.register(OtherTestEvent)
@@ -93,7 +93,7 @@ def step_impl3(context):
 @step(
     "a (?P<serializer>.+?) (?P<broker_type>.+) service bus is configured with the hierarchical topic map"
 )
-async def step_impl4(context, serializer, broker_type):
+async def step_impl3(context, serializer, broker_type):
     match (serializer, broker_type):
         case ("cloudevent", "amqp"):
             await configure_cloudevent_amqp_service_bus(context)
@@ -200,7 +200,7 @@ def configure_pydantic_inmemory_service_bus(context):
 @when(
     "I send a (?P<serializer>.+) (?P<topic>.+) message to the (?P<broker_type>.+) service bus"
 )
-async def step_impl9(context, serializer, topic, broker_type):
+async def step_impl4(context, serializer, topic, broker_type):
     event_type = context.topic_map.get(topic)
     event = event_type(
         source="test",
@@ -273,7 +273,7 @@ def create_pydantic_inmemory_publisher(context):
 
 
 @then("the message is received by the subscriber")
-async def step_impl14(context):
+async def step_impl5(context):
     result = False
     for i in range(10):
         result = context.wait_handle.is_set()
@@ -285,14 +285,14 @@ async def step_impl14(context):
 
 
 @step("the other event handlers are not invoked")
-def step_impl15(context):
+def step_impl6(context):
     assert context.wait_handle2.is_set() is False, (
         "The other event handler was invoked, but it should not have been"
     )
 
 
 @then("the messages are received by the subscriber")
-async def step_impl16(context):
+async def step_impl7(context):
     result = False
     for i in range(10):
         result = context.wait_handle2.is_set() and context.wait_handle.is_set()

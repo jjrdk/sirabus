@@ -7,13 +7,11 @@ from behave import step, when, then, use_step_matcher
 from steps.command_handlers import StatusCommandHandler, InfoCommandHandler
 from steps.test_types import StatusCommand, InvalidCommand, InfoCommand
 
-from sirabus import CommandResponse
-
 use_step_matcher("re")
 
 
 @step("commands have been registered in the hierarchical topic map")
-def step_impl3(context):
+def step_impl1(context):
     context.topic_map.add(Topic.get(StatusCommand), StatusCommand)
     context.topic_map.add(Topic.get(InfoCommand), InfoCommand)
 
@@ -21,7 +19,7 @@ def step_impl3(context):
 @step(
     "a (?P<serializer>.+) (?P<broker_type>.+) router is created with the hierarchical topic map"
 )
-async def step_impl4(context, serializer, broker_type):
+async def step_impl2(context, serializer, broker_type):
     match (serializer, broker_type):
         case ("cloudevent", "amqp"):
             from sirabus.publisher.cloudevent_router import create_amqp_router
@@ -71,7 +69,7 @@ async def step_impl4(context, serializer, broker_type):
 
 
 @when("I send the command (?P<topic>.+)")
-async def step_impl6(context, topic):
+async def step_impl3(context, topic):
     command_type = context.topic_map.get(topic) or InvalidCommand
     context.future = await context.router.route(
             command_type(
@@ -84,7 +82,7 @@ async def step_impl6(context, topic):
 
 
 @then('I receive the (?P<reply_type>error|reply) "(?P<message>.+?)"')
-async def step_impl7(context, reply_type, message):
+async def step_impl4(context, reply_type, message):
     def callback(r):
         context.response = r.result()
         context.wait_handle.set()
@@ -102,7 +100,7 @@ async def step_impl7(context, reply_type, message):
 
 
 @when('I send the commands "(?P<topic1>.+?)", "(?P<topic2>.+?)"')
-async def step_impl8(context, topic1, topic2):
+async def step_impl5(context, topic1, topic2):
     command_type1 = context.topic_map.get(topic1)
     context.future1 = await context.router.route(
             command_type1(
@@ -124,7 +122,7 @@ async def step_impl8(context, topic1, topic2):
 
 
 @then('I receive the replies "(?P<msg1>.+?)", "(?P<msg2>.+?)"')
-async def step_impl9(context, msg1, msg2):
+async def step_impl6(context, msg1, msg2):
     def callback1(r):
         context.response1 = r.result()
         context.wait_handle.set()
