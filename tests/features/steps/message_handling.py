@@ -93,12 +93,12 @@ def step_impl3(context):
 @step(
     "a (?P<serializer>.+?) (?P<broker_type>.+) service bus is configured with the hierarchical topic map"
 )
-def step_impl4(context, serializer, broker_type):
+async def step_impl4(context, serializer, broker_type):
     match (serializer, broker_type):
         case ("cloudevent", "amqp"):
-            configure_cloudevent_amqp_service_bus(context)
+            await configure_cloudevent_amqp_service_bus(context)
         case ("pydantic", "amqp"):
-            configure_pydantic_amqp_service_bus(context)
+            await configure_pydantic_amqp_service_bus(context)
         case ("cloudevent", "SQS"):
             configure_cloudevent_sqs_service_bus(context)
         case ("pydantic", "SQS"):
@@ -108,15 +108,15 @@ def step_impl4(context, serializer, broker_type):
         case ("pydantic", "in-memory"):
             configure_pydantic_inmemory_service_bus(context)
 
-    context.async_runner.run_async(context.consumer.run())
+    await context.consumer.run()
     logging.debug("Topography built.")
 
 
-def configure_cloudevent_amqp_service_bus(context):
+async def configure_cloudevent_amqp_service_bus(context):
     builder = AmqpTopographyBuilder(
         amqp_url=context.connection_string, topic_map=context.topic_map
     )
-    context.async_runner.run_async(builder.build())
+    await builder.build()
     from sirabus.servicebus.cloudevent_servicebus import (
         create_servicebus_for_amqp_cloudevent,
     )
@@ -129,11 +129,11 @@ def configure_cloudevent_amqp_service_bus(context):
     context.consumer = bus
 
 
-def configure_pydantic_amqp_service_bus(context):
+async def configure_pydantic_amqp_service_bus(context):
     builder = AmqpTopographyBuilder(
         amqp_url=context.connection_string, topic_map=context.topic_map
     )
-    context.async_runner.run_async(builder.build())
+    await builder.build()
     from sirabus.servicebus import create_servicebus_for_amqp_pydantic
 
     bus = create_servicebus_for_amqp_pydantic(
@@ -200,7 +200,7 @@ def configure_pydantic_inmemory_service_bus(context):
 @when(
     "I send a (?P<serializer>.+) (?P<topic>.+) message to the (?P<broker_type>.+) service bus"
 )
-def step_impl9(context, serializer, topic, broker_type):
+async def step_impl9(context, serializer, topic, broker_type):
     event_type = context.topic_map.get(topic)
     event = event_type(
         source="test",
@@ -221,7 +221,7 @@ def step_impl9(context, serializer, topic, broker_type):
             publisher = create_cloudevent_inmemory_publisher(context)
         case ("pydantic", "in-memory"):
             publisher = create_pydantic_inmemory_publisher(context)
-    context.async_runner.run_async(publisher.publish(event))
+    await publisher.publish(event)
 
 
 def create_cloudevent_amqp_publisher(context):
@@ -273,15 +273,15 @@ def create_pydantic_inmemory_publisher(context):
 
 
 @then("the message is received by the subscriber")
-def step_impl14(context):
+async def step_impl14(context):
     result = False
     for i in range(10):
-        context.async_runner.run_async(asyncio.sleep(0.25))
         result = context.wait_handle.is_set()
         if result:
             break
+        await asyncio.sleep(0.25)
     assert result, "The message was not received by the subscriber in time"
-    context.async_runner.run_async(context.consumer.stop())
+    await context.consumer.stop()
 
 
 @step("the other event handlers are not invoked")
@@ -292,12 +292,12 @@ def step_impl15(context):
 
 
 @then("the messages are received by the subscriber")
-def step_impl16(context):
+async def step_impl16(context):
     result = False
     for i in range(10):
-        context.async_runner.run_async(asyncio.sleep(0.25))
         result = context.wait_handle2.is_set() and context.wait_handle.is_set()
         if result:
             break
+        await asyncio.sleep(0.25)
     assert result, "The message was not received by the subscriber in time"
-    context.async_runner.run_async(context.consumer.stop())
+    await context.consumer.stop()

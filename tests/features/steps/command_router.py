@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import uuid
 from datetime import datetime, timezone
 
@@ -22,7 +21,7 @@ def step_impl3(context):
 @step(
     "a (?P<serializer>.+) (?P<broker_type>.+) router is created with the hierarchical topic map"
 )
-def step_impl4(context, serializer, broker_type):
+async def step_impl4(context, serializer, broker_type):
     match (serializer, broker_type):
         case ("cloudevent", "amqp"):
             from sirabus.publisher.cloudevent_router import create_amqp_router
@@ -68,14 +67,13 @@ def step_impl4(context, serializer, broker_type):
             )
         case _:
             raise ValueError(f"Unknown broker type: {serializer} {broker_type}")
-    context.async_runner.run_async(asyncio.sleep(0.1))
+    await asyncio.sleep(0.1)
 
 
 @when("I send the command (?P<topic>.+)")
-def step_impl6(context, topic):
+async def step_impl6(context, topic):
     command_type = context.topic_map.get(topic) or InvalidCommand
-    context.future = context.async_runner.run_async(
-        context.router.route(
+    context.future = await context.router.route(
             command_type(
                 aggregate_id="test",
                 version=1,
@@ -83,34 +81,30 @@ def step_impl6(context, topic):
                 correlation_id=str(uuid.uuid4()),
             )
         )
-    )
 
 
 @then('I receive the (?P<reply_type>error|reply) "(?P<message>.+?)"')
-def step_impl7(context, reply_type, message):
+async def step_impl7(context, reply_type, message):
     def callback(r):
         context.response = r.result()
         context.wait_handle.set()
 
-    from asyncio import Future
-
-    future: Future[CommandResponse] = context.future
+    future = context.future
     future.add_done_callback(callback)
     for i in range(10):
         if context.wait_handle.is_set():
             break
         # Allow some time for the command to be processed
-        context.async_runner.run_async(asyncio.sleep(0.25))
+        await asyncio.sleep(0.25)
     assert context.wait_handle.is_set(), "Timeout waiting for command response"
     assert context.response.success == (True if reply_type == "reply" else False)
     assert context.response.message == message
 
 
 @when('I send the commands "(?P<topic1>.+?)", "(?P<topic2>.+?)"')
-def step_impl8(context, topic1, topic2):
+async def step_impl8(context, topic1, topic2):
     command_type1 = context.topic_map.get(topic1)
-    context.future1 = context.async_runner.run_async(
-        context.router.route(
+    context.future1 = await context.router.route(
             command_type1(
                 aggregate_id="test",
                 version=1,
@@ -118,10 +112,8 @@ def step_impl8(context, topic1, topic2):
                 correlation_id=str(uuid.uuid4()),
             )
         )
-    )
     command_type2 = context.topic_map.get(topic2)
-    context.future2 = context.async_runner.run_async(
-        context.router.route(
+    context.future2 = await context.router.route(
             command_type2(
                 aggregate_id="test",
                 version=1,
@@ -129,11 +121,10 @@ def step_impl8(context, topic1, topic2):
                 correlation_id=str(uuid.uuid4()),
             )
         )
-    )
 
 
 @then('I receive the replies "(?P<msg1>.+?)", "(?P<msg2>.+?)"')
-def step_impl9(context, msg1, msg2):
+async def step_impl9(context, msg1, msg2):
     def callback1(r):
         context.response1 = r.result()
         context.wait_handle.set()
@@ -150,7 +141,7 @@ def step_impl9(context, msg1, msg2):
         if context.wait_handle.is_set() and context.wait_handle2.is_set():
             break
         # Allow some time for the command to be processed
-        context.async_runner.run_async(asyncio.sleep(0.25))
+        await asyncio.sleep(0.25)
     assert context.wait_handle.is_set(), "Timeout waiting for first command response"
     assert context.wait_handle2.is_set(), "Timeout waiting for second command response"
     assert context.response1.message == msg1, (
