@@ -133,7 +133,7 @@ class SqsConfig:
         use_tls: bool = True,
     ):
         """
-        Defines the configuration for the S3 client.
+        Defines the configuration for SQS/SNS clients.
         If a profile name is provided, the access key id and secret access are disregarded and the profile credentials
         are used.
 
