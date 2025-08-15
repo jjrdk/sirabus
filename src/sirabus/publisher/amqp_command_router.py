@@ -17,6 +17,12 @@ from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 
 
 class AmqpCommandRouter(IRouteCommands):
+    """AMQP Command Router for handling commands and responses over AMQP.
+    This class implements the IRouteCommands interface to route commands
+    using AMQP protocol. It manages the connection to the AMQP broker,
+    publishes commands, and consumes responses asynchronously.
+    """
+
     def __init__(
         self,
         amqp_url: str,
@@ -27,6 +33,16 @@ class AmqpCommandRouter(IRouteCommands):
         response_reader: Callable[[dict, bytes], CommandResponse | None],
         logger: Optional[logging.Logger] = None,
     ) -> None:
+        """
+        Initializes the AmqpCommandRouter with the necessary parameters.
+        :param amqp_url: The URL of the AMQP broker.
+        :param topic_map: The hierarchical topic map for routing commands.
+        :param message_writer: A callable that formats the command into a message.
+        :param response_reader: A callable that reads the response from the message.
+        :param logger: Optional logger for logging debug information.
+        :raises ValueError: If the amqp_url is empty or if the topic_map is None.
+        :raises TypeError: If message_writer or response_reader are not callable.
+        """
         self._response_reader = response_reader
         self._message_writer = message_writer
         self.__inflight: Dict[

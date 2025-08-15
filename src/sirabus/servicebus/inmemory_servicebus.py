@@ -23,6 +23,19 @@ class InMemoryServiceBus(ServiceBus, MessageConsumer):
         message_pump: MessagePump,
         logger: logging.Logger,
     ) -> None:
+        """
+        Initializes the InMemoryServiceBus.
+        :param topic_map: The hierarchical topic map for topic resolution.
+        :param message_reader: A callable that reads the message and returns headers and an event or command.
+        :param response_writer: A callable that formats the command response for sending.
+        :param handlers: A list of event and command handlers.
+        :param message_pump: The message pump for handling message consumption and publishing.
+        :param logger: Optional logger for logging.
+        :raises ValueError: If the message reader cannot determine the topic for the event or command.
+        :raises TypeError: If the event or command is not a subclass of BaseEvent or BaseCommand.
+        :raises Exception: If there is an error during message handling or response sending.
+        :return: None
+        """
         ServiceBus.__init__(
             self,
             topic_map=topic_map,

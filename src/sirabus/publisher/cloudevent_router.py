@@ -14,6 +14,15 @@ def create_amqp_router(
     topic_map: HierarchicalTopicMap,
     logger: Optional[logging.Logger] = None,
 ) -> IRouteCommands:
+    """
+    Creates a CloudEventCommandRouter for AMQP.
+    :param amqp_url: The AMQP URL.
+    :param topic_map: The hierarchical topic map.
+    :param logger: Optional logger.
+    :return: An AmqpCommandRouter instance.
+    :raises ValueError: If the amqp_url is empty or if the topic_map is None.
+    :raises TypeError: If message_writer or response_reader are not callable.
+    """
     from sirabus.publisher.cloudevent_serialization import create_command
 
     return AmqpCommandRouter(
@@ -30,6 +39,15 @@ def create_sqs_router(
     topic_map: HierarchicalTopicMap,
     logger: Optional[logging.Logger] = None,
 ) -> IRouteCommands:
+    """
+    Creates a CloudEventCommandRouter for SQS.
+    :param config: The SQS configuration.
+    :param topic_map: The hierarchical topic map.
+    :param logger: Optional logger.
+    :return: An SqsCommandRouter instance.
+    :raises ValueError: If the config is None or if the topic_map is None.
+    :raises TypeError: If message_writer or response_reader are not callable.
+    """
     from sirabus.publisher.cloudevent_serialization import create_command
 
     return SqsCommandRouter(
@@ -46,6 +64,15 @@ def create_inmemory_router(
     topic_map: HierarchicalTopicMap,
     logger: Optional[logging.Logger] = None,
 ) -> IRouteCommands:
+    """
+    Creates a CloudEventCommandRouter for in-memory use.
+    :param message_pump: The message pump for handling messages.
+    :param topic_map: The hierarchical topic map.
+    :param logger: Optional logger.
+    :return: An InMemoryCommandRouter instance.
+    :raises ValueError: If the message_pump is None or if the topic_map is None.
+    :raises TypeError: If message_writer or response_reader are not callable.
+    """
     from sirabus.publisher.cloudevent_serialization import (
         create_command,
         read_command_response,

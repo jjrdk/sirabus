@@ -21,6 +21,14 @@ class InMemoryPublisher(IPublishEvents):
         event_writer: Callable[[BaseEvent, HierarchicalTopicMap], Tuple[str, str, str]],
         logger: logging.Logger | None = None,
     ) -> None:
+        """
+        Initializes the InMemoryPublisher with a topic map, message pump, and event writer.
+        :param topic_map: The hierarchical topic map to use for event topics.
+        :param messagepump: The message pump to use for publishing messages.
+        :param event_writer: A callable that takes an event and topic map and returns a tuple
+                            containing the topic, hierarchical topic, and JSON representation of the event.
+        :param logger: An optional logger for logging events.
+        """
         self._event_writer = event_writer
         self.__topic_map = topic_map
         self.__messagepump = messagepump

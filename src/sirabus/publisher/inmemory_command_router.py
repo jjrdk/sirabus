@@ -10,6 +10,12 @@ from sirabus.message_pump import MessagePump, MessageConsumer
 
 
 class InMemoryCommandRouter(IRouteCommands):
+    """In-memory Command Router for handling commands and responses.
+    This class implements the IRouteCommands interface to route commands
+    using an in-memory message pump. It manages the registration of consumers
+    for handling command responses and publishes commands to the message pump.
+    """
+
     def __init__(
         self,
         message_pump: MessagePump,
@@ -20,6 +26,18 @@ class InMemoryCommandRouter(IRouteCommands):
         response_reader: Callable[[dict, bytes], CommandResponse | None],
         logger: Optional[logging.Logger] = None,
     ) -> None:
+        """
+        Initializes the InMemoryCommandRouter with the necessary parameters.
+        :param message_pump: The message pump for handling messages.
+        :param topic_map: The hierarchical topic map for routing commands.
+        :param command_writer: A callable that formats the command into a message.
+        :param response_reader: A callable that reads the response from the message.
+        :param logger: Optional logger for logging debug information.
+        :raises ValueError: If the message_pump is None or if the topic_map is None.
+        :raises TypeError: If command_writer or response_reader are not callable.
+        :raises TypeError: If command is not a subclass of BaseCommand.
+        :raises ValueError: If the command cannot be serialized.
+        """
         self._response_reader = response_reader
         self._command_writer = command_writer
         self._message_pump = message_pump
@@ -63,6 +81,10 @@ class InMemoryCommandRouter(IRouteCommands):
 
 
 class ResponseConsumer(MessageConsumer):
+    """ResponseConsumer for handling command responses. This class extends MessageConsumer to handle incoming messages
+    that are responses to commands. It reads the response and sets the result on the associated future.
+    """
+
     def __init__(
         self,
         parent_cleanup: Callable[[MessageConsumer], None],

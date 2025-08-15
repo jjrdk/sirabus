@@ -15,6 +15,18 @@ def create_servicebus_for_amqp(
     prefetch_count: int = 10,
     logger: Optional[logging.Logger] = None,
 ) -> ServiceBus:
+    """
+    Create a ServiceBus instance for AMQP.
+    :param amqp_url: The AMQP URL for the service bus.
+    :param topic_map: The hierarchical topic map for topic resolution.
+    :param handlers: A list of event and command handlers.
+    :param prefetch_count: The number of messages to prefetch from the service bus.
+    :param logger: Optional logger for logging.
+    :return: An instance of AmqpServiceBus.
+    :raises ValueError: If the topic map is not provided.
+    :raises TypeError: If the handlers are not instances of IHandleEvents or IHandleCommands.
+    :raises Exception: If there is an error during service bus creation.
+    """
     from sirabus.servicebus.amqp_servicebus import AmqpServiceBus
 
     from sirabus.publisher.pydantic_serialization import (
@@ -40,6 +52,18 @@ def create_servicebus_for_sqs(
     prefetch_count: int = 10,
     logger: Optional[logging.Logger] = None,
 ) -> ServiceBus:
+    """
+    Create a ServiceBus instance for SQS.
+    :param config: The SQS configuration for the service bus.
+    :param topic_map: The hierarchical topic map for topic resolution.
+    :param handlers: A list of event and command handlers.
+    :param prefetch_count: The number of messages to prefetch from the service bus.
+    :param logger: Optional logger for logging.
+    :return: An instance of SqsServiceBus.
+    :raises ValueError: If the topic map is not provided.
+    :raises TypeError: If the handlers are not instances of IHandleEvents or IHandleCommands.
+    :raises Exception: If there is an error during service bus creation.
+    """
     from sirabus.publisher.pydantic_serialization import (
         create_command_response,
         read_event_message,
@@ -63,6 +87,16 @@ def create_servicebus_for_inmemory(
     handlers: List[IHandleEvents | IHandleCommands],
     message_pump: MessagePump,
 ) -> ServiceBus:
+    """
+    Create a ServiceBus instance for in-memory communication.
+    :param topic_map: The hierarchical topic map for topic resolution.
+    :param handlers: A list of event and command handlers.
+    :param message_pump: The message pump for handling message consumption and publishing.
+    :return: An instance of InMemoryServiceBus.
+    :raises ValueError: If the topic map is not provided.
+    :raises TypeError: If the handlers are not instances of IHandleEvents or IHandleCommands.
+    :raises Exception: If there is an error during service bus creation.
+    """
     from sirabus.publisher.pydantic_serialization import (
         create_command_response,
         read_event_message,

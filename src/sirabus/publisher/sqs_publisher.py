@@ -20,6 +20,17 @@ class SqsPublisher(IPublishEvents):
         event_writer: Callable[[BaseEvent, HierarchicalTopicMap], Tuple[str, str, str]],
         logger: logging.Logger | None = None,
     ) -> None:
+        """
+        Initializes the SqsPublisher.
+        :param sqs_config: The SQS configuration.
+        :param topic_map: The hierarchical topic map for topic resolution.
+        :param event_writer: A callable that writes the event to a message.
+        :param logger: Optional logger for logging.
+        :raises ValueError: If the event writer cannot determine the topic for the event.
+        :raises TypeError: If the event is not a subclass of BaseEvent.
+        :raises Exception: If there is an error during message publishing.
+        :return: None
+        """
         self.__sqs_config = sqs_config
         self._event_writer = event_writer
         self.__topic_map = topic_map
@@ -60,6 +71,13 @@ def create_publisher_for_sqs(
     topic_map: HierarchicalTopicMap,
     logger: logging.Logger | None = None,
 ) -> IPublishEvents:
+    """
+    Creates a CloudEventPublisher for SQS.
+    :param config: The SQS configuration.
+    :param topic_map: The hierarchical topic map.
+    :param logger: Optional logger.
+    :return: A CloudEventPublisher instance.
+    """
     from sirabus.publisher.cloudevent_serialization import create_event
 
     return SqsPublisher(

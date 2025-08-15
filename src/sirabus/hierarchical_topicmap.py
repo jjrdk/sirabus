@@ -10,10 +10,55 @@ from sirabus import CommandResponse
 
 class HierarchicalTopicMap:
     """
-    Represents a map of topics to event classes.
+    A hierarchical topic map for managing topics and their metadata.
+    This class allows for the registration of topics and their corresponding classes,
+    as well as the retrieval of metadata associated with those topics.
+    It supports hierarchical topic resolution based on class inheritance and provides methods
+    to manage metadata for topics.
+    It also allows for the exclusion of certain base classes from the topic hierarchy.
+    :param topic: The topic of the event.
+    :param cls: The class of the event.
+    :raises TypeError: If the topic is not a string or the class is not a type.
+    :raises ValueError: If the topic is empty or the class is not a subclass of BaseEvent or BaseCommand.
+    :raises RuntimeError: If a base class is not found in the topic map.
+    :return: None
+    :example:
+    >>> topic_map = HierarchicalTopicMap()
+    >>> topic_map.add("user.created", UserCreatedEvent)
+    >>> topic_map.set_metadata("user.created", "description", "Event when a user is created")
+    >>> topic_map.get_metadata("user.created", "description")
+    'Event when a user is created'
+    >>> topic_map.get("user.created")
+    <class '__main__.UserCreatedEvent'>
+    >>> topic_map.get_from_type(UserCreatedEvent)
+    'user.created'
+    >>> topic_map.get_all()
+    ['user.created']
+    >>> topic_map.except_base(BaseEvent)
+    >>> topic_map.register_module(my_module)
+    >>> topic_map.build_parent_child_relationships()
+    {
+        'amq.topic': {'user.created', 'user.updated'},
+        'user.created': {'user.updated'},
+        'user.updated': set()
+    }
+    :note: The topic map supports hierarchical topics based on class inheritance.
+    It allows for the registration of classes and their topics, and it can resolve topics based on
+    the class hierarchy. The topic map can also manage metadata for each topic, allowing for additional
+    information to be associated with each topic.
+    :note: The topic map can be extended to support additional features such as topic validation,
+    topic filtering, and more complex topic relationships.
     """
 
     def __init__(self) -> None:
+        """
+        Initializes the HierarchicalTopicMap.
+        This method sets up the internal structures for managing topics and their metadata.
+        It initializes an empty dictionary for metadata and a dictionary for topics.
+        It also adds a default topic for CommandResponse.
+        :return: None
+        :raises None: This method does not raise any exceptions.
+        """
         self.__metadata: Dict[str, Dict[str, Any]] = {}
         self._topics: Dict[str, type] = {}
         self.__excepted_bases__: Set[type] = {object, BaseModel, BaseEvent, BaseCommand}
@@ -60,6 +105,36 @@ class HierarchicalTopicMap:
         return self
 
     def register(self, instance: Any) -> Self:
+        """
+        Registers the class of the instance in the topic map.
+        :param instance: The instance to register.
+        :return: The HierarchicalTopicMap instance.
+        :raises TypeError: If the instance is not a class or does not have a __topic__ attribute.
+        :raises ValueError: If the topic is empty or the class is not a subclass of BaseEvent or BaseCommand.
+        :raises RuntimeError: If a base class is not found in the topic map.
+        :note: If the instance is a class, it will resolve the topic based on the class hierarchy.
+        If the instance is not a class, it will use the type of the instance to resolve the topic.
+        If the class has a __topic__ attribute, it will use that as the topic.
+        If the class does not have a __topic__ attribute, it will use the class name as the topic.
+        If the class has a base class that is not in the excepted bases, it will resolve the topic
+        based on the base class hierarchy.
+        :return: The HierarchicalTopicMap instance.
+        :raises TypeError: If the instance is not a class or does not have a __topic__ attribute.
+        :raises ValueError: If the topic is empty or the class is not a subclass of BaseEvent or BaseCommand.
+        :raises RuntimeError: If a base class is not found in the topic map.
+        :example:
+        >>> class UserCreatedEvent(BaseEvent):
+        ...     __topic__ = "user.created"
+        >>> topic_map = HierarchicalTopicMap()
+        >>> topic_map.register(UserCreatedEvent)
+        >>> topic_map.get("user.created")
+        <class '__main__.UserCreatedEvent'>
+        >>> topic_map.get_from_type(UserCreatedEvent)
+        'user.created'
+        >>> topic_map.get_all()
+        ['user.created']
+        :note: The topic map supports hierarchical topics based on class inheritance
+        """
         t = instance if isinstance(instance, type) else type(instance)
         hierarchical_topic = self._get_hierarchical_topic(t)
         if hierarchical_topic is not None:

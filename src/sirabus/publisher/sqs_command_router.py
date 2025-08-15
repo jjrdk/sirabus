@@ -20,6 +20,18 @@ class SqsCommandRouter(IRouteCommands):
         response_reader: Callable[[dict, bytes], CommandResponse | None],
         logger: Optional[logging.Logger] = None,
     ) -> None:
+        """
+        Initializes the SqsCommandRouter.
+        :param config: The SQS configuration.
+        :param topic_map: The hierarchical topic map for topic resolution.
+        :param message_writer: A callable that writes the command to a message.
+        :param response_reader: A callable that reads the response from a message.
+        :param logger: Optional logger for logging.
+        :raises ValueError: If the message writer cannot determine the topic for the command.
+        :raises TypeError: If the response reader does not return a CommandResponse or None.
+        :raises Exception: If there is an error during message publishing or response handling.
+        :return: None
+        """
         self.__response_reader = response_reader
         self.__message_writer = message_writer
         self.__inflight: Dict[str, Tuple[asyncio.Future[CommandResponse], Thread]] = {}
