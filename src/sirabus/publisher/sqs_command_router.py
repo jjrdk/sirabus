@@ -25,7 +25,7 @@ class SqsCommandRouter(IRouteCommands):
         self.__inflight: Dict[str, Tuple[asyncio.Future[CommandResponse], Thread]] = {}
         self.__config = config
         self.__topic_map = topic_map
-        self.__logger = logger or logging.getLogger("AmqpCommandRouter")
+        self.__logger = logger or logging.getLogger("SqsCommandRouter")
 
     async def route[TCommand: BaseCommand](
         self, command: TCommand
