@@ -45,7 +45,7 @@ class SqsServiceBus(ServiceBus):
             message_reader=message_reader,
             topic_map=topic_map,
             handlers=handlers,
-            logger=logger or logging.getLogger("AmqpServiceBus"),
+            logger=logger or logging.getLogger("SqsServiceBus"),
         )
         self.__config: SqsConfig = config
         self.__subscriptions: Set[str] = set()
