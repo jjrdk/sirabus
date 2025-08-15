@@ -52,7 +52,8 @@ class ServiceBus(abc.ABC):
                     h
                     for h in self._handlers
                     if isinstance(h, IHandleCommands)
-                    and Topic.get(type(event)) == Topic.get(get_type_param(h))
+                    and self._topic_map.get_from_type(type(event))
+                    == self._topic_map.get_from_type(get_type_param(h))
                 ),
                 None,
             )

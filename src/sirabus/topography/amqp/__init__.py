@@ -43,7 +43,7 @@ class TopographyBuilder:
         await channel.close()
 
     async def _declare_exchanges(self, channel, exchanges):
-        all_topics = set(self.__topic_map.get_all_hierarchical_topics())
+        all_topics = set(self.__topic_map.get_all())
         for topic in all_topics:
             await self._declare_exchange(
                 topic=topic, channel=channel, exchanges=exchanges

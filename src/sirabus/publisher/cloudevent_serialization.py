@@ -39,7 +39,7 @@ def create_event[TEvent: BaseEvent](
 ) -> Tuple[str, str, str]:
     event_type = type(event)
     topic = Topic.get(event_type)
-    hierarchical_topic = topic_map.get_hierarchical_topic(event_type)
+    hierarchical_topic = topic_map.get_from_type(event_type)
 
     if not hierarchical_topic:
         raise ValueError(
@@ -67,7 +67,7 @@ def create_command[TCommand: BaseCommand](
 ) -> Tuple[str, str, str]:
     command_type = type(command)
     topic = Topic.get(command_type)
-    hierarchical_topic = topic_map.get_hierarchical_topic(command_type)
+    hierarchical_topic = topic_map.get_from_type(command_type)
 
     if not hierarchical_topic:
         raise ValueError(
