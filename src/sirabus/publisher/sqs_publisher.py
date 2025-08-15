@@ -23,7 +23,7 @@ class SqsPublisher(IPublishEvents):
         self.__sqs_config = sqs_config
         self._event_writer = event_writer
         self.__topic_map = topic_map
-        self.__logger = logger or logging.getLogger("AmqpPublisher")
+        self.__logger = logger or logging.getLogger("SqsPublisher")
 
     async def publish[TEvent: BaseEvent](self, event: TEvent) -> None:
         """
