@@ -46,29 +46,24 @@ class AmqpCommandRouter(IRouteCommands):
         self, command: TCommand
     ) -> asyncio.Future[CommandResponse]:
         loop = asyncio.get_event_loop()
+        try:
+            _, hierarchical_topic, j = self._message_writer(command, self._topic_map)
+        except ValueError:
+            future = loop.create_future()
+            future.set_result(CommandResponse(success=False, message="unknown command"))
+            return future
         connection = await self._get_connection()
         channel = await connection.channel()
         response_queue: AbstractQueue = await channel.declare_queue(
             name=str(uuid.uuid4()), durable=False, exclusive=True, auto_delete=True
         )
         consume_tag = await response_queue.consume(callback=self._consume_queue)
-        try:
-            topic, hierarchical_topic, j = self._message_writer(
-                command, self._topic_map
-            )
-        except ValueError as ve:
-            self._logger.exception(
-                f"Error creating message for command {command}", exc_info=ve
-            )
-            future = loop.create_future()
-            future.set_result(CommandResponse(success=False, message="unknown command"))
-            return future
         exchange = await channel.get_exchange(name="amq.topic", ensure=False)
         self._logger.debug("Channel opened for publishing CloudEvent.")
         response = await exchange.publish(
             message=Message(
                 body=j.encode(),
-                headers={"topic": topic},
+                headers={"topic": hierarchical_topic},
                 correlation_id=command.correlation_id,
                 content_encoding="utf-8",
                 content_type="application/json",

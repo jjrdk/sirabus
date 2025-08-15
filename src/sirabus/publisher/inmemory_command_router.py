@@ -31,6 +31,13 @@ class InMemoryCommandRouter(IRouteCommands):
         self, command: TCommand
     ) -> asyncio.Future[CommandResponse]:
         response_future = asyncio.get_event_loop().create_future()
+        try:
+            headers, message = self._create_message(command)
+        except ValueError:
+            response_future.set_result(
+                CommandResponse(success=False, message="unknown command")
+            )
+            return response_future
         consumer = ResponseConsumer(
             parent_cleanup=self._remove_consumer,
             message_pump=self._message_pump,
@@ -39,7 +46,7 @@ class InMemoryCommandRouter(IRouteCommands):
         )
         self._message_pump.register_consumer(consumer)
         self._consumers.append(consumer)
-        headers, message = self._create_message(command)
+        headers["topic"] = self._topic_map.get_from_type(type(command))
         headers["reply_to"] = consumer.id
         self._message_pump.publish((headers, message))
         return response_future
@@ -73,6 +80,7 @@ class ResponseConsumer(MessageConsumer):
         self,
         headers: dict,
         body: bytes,
+        message_id: str | None,
         correlation_id: str | None,
         reply_to: str | None,
     ) -> None:

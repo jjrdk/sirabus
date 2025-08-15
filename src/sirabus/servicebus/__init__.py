@@ -37,6 +37,7 @@ class ServiceBus(abc.ABC):
         self,
         headers: dict,
         body: bytes,
+        message_id: str | None,
         correlation_id: str | None,
         reply_to: str | None,
     ) -> None:
@@ -44,8 +45,6 @@ class ServiceBus(abc.ABC):
         if isinstance(event, BaseEvent):
             await self.handle_event(event, headers)
         elif isinstance(event, BaseCommand):
-            from aett.eventstore import Topic
-
             command_handler = next(
                 (
                     h
@@ -65,6 +64,7 @@ class ServiceBus(abc.ABC):
                     return
                 await self.send_command_response(
                     response=CommandResponse(success=False, message="unknown command"),
+                    message_id=message_id,
                     correlation_id=correlation_id,
                     reply_to=reply_to,
                 )
@@ -76,7 +76,10 @@ class ServiceBus(abc.ABC):
                 )
                 return
             await self.send_command_response(
-                response=response, correlation_id=correlation_id, reply_to=reply_to
+                response=response,
+                message_id=message_id,
+                correlation_id=correlation_id,
+                reply_to=reply_to,
             )
         elif isinstance(event, CommandResponse):
             pass
@@ -92,10 +95,17 @@ class ServiceBus(abc.ABC):
             ],
             return_exceptions=True,
         )
+        self._logger.debug(
+            "Event handled",
+        )
 
     @abc.abstractmethod
     async def send_command_response(
-        self, response: CommandResponse, correlation_id: str | None, reply_to: str
+        self,
+        response: CommandResponse,
+        message_id: str | None,
+        correlation_id: str | None,
+        reply_to: str,
     ) -> None:
         pass
 

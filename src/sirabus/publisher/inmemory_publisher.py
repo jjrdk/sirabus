@@ -32,6 +32,6 @@ class InMemoryPublisher(IPublishEvents):
         :param event: The event to publish.
         """
 
-        topic, hierarchical_topic, j = self._event_writer(event, self.__topic_map)
-        self.__messagepump.publish(({"topic": topic}, j.encode()))
+        _, hierarchical_topic, j = self._event_writer(event, self.__topic_map)
+        self.__messagepump.publish(({"topic": hierarchical_topic}, j.encode()))
         await asyncio.sleep(0)

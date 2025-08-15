@@ -1,45 +1,47 @@
 Feature: Event Handling
 
-  Scenario: AMQP message publishing and subscription with cloudevents
-    Given a running amqp message broker
+  Scenario Template: Message publishing and subscription
+    Given a running <broker_type> message broker
     And events have been registered in the hierarchical topic map
-    And a cloudevent amqp broker is configured with the hierarchical topic map
-    When I send a cloudevent test.test_sub.nested message to the amqp service bus
-    Then the message is received by the subscriber
-
-  Scenario: AMQP message publishing and subscription with pydantic
-    Given a running amqp message broker
-    And events have been registered in the hierarchical topic map
-    And a pydantic amqp broker is configured with the hierarchical topic map
-    When I send a pydantic test message to the amqp service bus
-    Then the message is received by the subscriber
-
-  Scenario: In memory message publishing and subscription with cloudevents
-    Given a running in-memory message broker
-    And events have been registered in the hierarchical topic map
-    And a cloudevent in-memory broker is configured with the hierarchical topic map
-    When I send a cloudevent test message to the in-memory service bus
-    Then the message is received by the subscriber
-
-  Scenario: In memory message publishing and subscription with pydantic
-    Given a running in-memory message broker
-    And events have been registered in the hierarchical topic map
-    And a pydantic in-memory broker is configured with the hierarchical topic map
-    When I send a pydantic test message to the in-memory service bus
-    Then the message is received by the subscriber
-
-  Scenario: Event handling segregation
-    Given a running amqp message broker
-    And events have been registered in the hierarchical topic map
-    And a cloudevent amqp broker is configured with the hierarchical topic map
-    When I send a cloudevent test message to the amqp service bus
+    And a <serializer> <broker_type> service bus is configured with the hierarchical topic map
+    When I send a <serializer> <event_type> message to the <broker_type> service bus
     Then the message is received by the subscriber
     And the other event handlers are not invoked
 
-  Scenario: Multiple event handling segregation
-    Given a running amqp message broker
+    Examples:
+      | broker_type | serializer | event_type           |
+      | amqp        | cloudevent | test.test_sub.nested |
+      | amqp        | cloudevent | test                 |
+      | amqp        | pydantic   | test.test_sub.nested |
+      | amqp        | pydantic   | test                 |
+      | in-memory   | cloudevent | test.test_sub.nested |
+      | in-memory   | cloudevent | test                 |
+      | in-memory   | pydantic   | test.test_sub.nested |
+      | in-memory   | pydantic   | test                 |
+      | SQS         | cloudevent | test.test_sub.nested |
+      | SQS         | cloudevent | test                 |
+      | SQS         | pydantic   | test.test_sub.nested |
+      | SQS         | pydantic   | test                 |
+
+  Scenario Template: Multiple event handling segregation
+    Given a running <broker_type> message broker
     And events have been registered in the hierarchical topic map
-    And a cloudevent amqp broker is configured with the hierarchical topic map
-    When I send a cloudevent test message to the amqp service bus
-    When I send a cloudevent other message to the amqp service bus
+    And a <serializer> <broker_type> service bus is configured with the hierarchical topic map
+    When I send a <serializer> <event_type> message to the <broker_type> service bus
+    When I send a <serializer> other message to the <broker_type> service bus
     Then the messages are received by the subscriber
+
+    Examples:
+      | broker_type | serializer | event_type           |
+      | amqp        | cloudevent | test.test_sub.nested |
+      | amqp        | cloudevent | test                 |
+      | amqp        | pydantic   | test.test_sub.nested |
+      | amqp        | pydantic   | test                 |
+      | in-memory   | cloudevent | test.test_sub.nested |
+      | in-memory   | cloudevent | test                 |
+      | in-memory   | pydantic   | test.test_sub.nested |
+      | in-memory   | pydantic   | test                 |
+      | SQS         | cloudevent | test.test_sub.nested |
+      | SQS         | cloudevent | test                 |
+      | SQS         | pydantic   | test.test_sub.nested |
+      | SQS         | pydantic   | test                 |

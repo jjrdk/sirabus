@@ -13,7 +13,7 @@ test: install_dependencies
 	# Run tests using behave
 	.venv/bin/behave tests/features --no-capture-stderr --junit --junit-directory reports -f pretty
 
-build: test
+build: install_dependencies test
 	# Build the project using uv
 	uv version $(VERSION)
 	uv build

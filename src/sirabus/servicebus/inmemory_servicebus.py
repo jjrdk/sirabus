@@ -46,10 +46,16 @@ class InMemoryServiceBus(ServiceBus, MessageConsumer):
         await asyncio.sleep(0)
 
     async def send_command_response(
-        self, response: CommandResponse, correlation_id: str | None, reply_to: str
+        self,
+        response: CommandResponse,
+        message_id: str | None,
+        correlation_id: str | None,
+        reply_to: str,
     ) -> None:
         topic, message = self._response_writer(response)
         headers = {"topic": topic, "reply_to": reply_to}
         if correlation_id:
             headers["correlation_id"] = correlation_id
+        if message_id:
+            headers["message_id"] = message_id
         self._message_pump.publish((headers, message))

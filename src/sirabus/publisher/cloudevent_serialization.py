@@ -21,6 +21,19 @@ class CloudEventAttributes(BaseModel):
     reply_to: Optional[str] = Field(default=None)
 
 
+def write_cloudevent_message(
+    topic_map: HierarchicalTopicMap, properties: dict, body: bytes
+) -> Tuple[dict, BaseEvent]:
+    ce = CloudEvent.model_validate_json(body)
+    event_type = topic_map.get(ce.type)
+    if event_type is None:
+        raise ValueError(f"Event type {ce.type} not found in topic map")
+    if event_type and not issubclass(event_type, BaseModel):
+        raise TypeError(f"Event type {event_type} is not a subclass of BaseModel")
+    event = event_type.model_validate(ce.data)
+    return properties, event
+
+
 def create_event[TEvent: BaseEvent](
     event: TEvent, topic_map: HierarchicalTopicMap
 ) -> Tuple[str, str, str]:
