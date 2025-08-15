@@ -117,6 +117,9 @@ class SqsServiceBus(ServiceBus):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         sqs_client = self.__config.to_sqs_client()
+        from botocore.exceptions import EndpointConnectionError
+        from urllib3.exceptions import NewConnectionError
+
         while not self._stopped:
             try:
                 response = sqs_client.receive_message(
@@ -124,6 +127,12 @@ class SqsServiceBus(ServiceBus):
                     MaxNumberOfMessages=self._prefetch_count,
                     WaitTimeSeconds=3,
                 )
+            except (
+                EndpointConnectionError,
+                NewConnectionError,
+                ConnectionRefusedError,
+            ):
+                break
             except Exception as e:
                 self._logger.exception(
                     "Error receiving messages from SQS queue", exc_info=e
