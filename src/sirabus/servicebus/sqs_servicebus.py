@@ -30,10 +30,6 @@ class SqsServiceBus(ServiceBus):
         prefetch_count: int = 10,
         logger: Optional[logging.Logger] = None,
     ) -> None:
-        """Create a new instance of the consumer class, passing in the AMQP
-        URL used to connect to RabbitMQ.
-        :param HierarchicalTopicMap topic_map: The topic map to use for resolving topics.
-        :param List[IHandleEvents] handlers: The list of event handlers to register.
         """
         Create a new instance of the SQS service bus consumer class.
 
