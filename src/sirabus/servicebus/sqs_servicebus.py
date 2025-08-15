@@ -34,7 +34,16 @@ class SqsServiceBus(ServiceBus):
         URL used to connect to RabbitMQ.
         :param HierarchicalTopicMap topic_map: The topic map to use for resolving topics.
         :param List[IHandleEvents] handlers: The list of event handlers to register.
-        :param int prefetch_count: The number of messages to prefetch from RabbitMQ.
+        """
+        Create a new instance of the SQS service bus consumer class.
+
+        :param SqsConfig config: The SQS configuration object containing AWS credentials and queue settings.
+        :param HierarchicalTopicMap topic_map: The topic map to use for resolving topics.
+        :param List[IHandleEvents | IHandleCommands] handlers: The list of event and command handlers to register.
+        :param Callable message_reader: Function to deserialize messages from SQS.
+        :param Callable command_response_writer: Function to serialize command responses for SQS.
+        :param int prefetch_count: The number of messages to prefetch from SQS.
+        :param Optional[logging.Logger] logger: Logger instance to use for logging.
         """
         super().__init__(
             message_reader=message_reader,
