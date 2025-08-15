@@ -162,6 +162,8 @@ class HierarchicalTopicMap:
 
         for instance in self._topics.values():
             if any(t for t in instance.__bases__ if t in self.__excepted_bases__):
-                relationships.setdefault("amq.topic", set()).add(self.get_from_type(instance))
+                relationships.setdefault("amq.topic", set()).add(
+                    self.get_from_type(instance)
+                )
             visit(instance)
         return relationships

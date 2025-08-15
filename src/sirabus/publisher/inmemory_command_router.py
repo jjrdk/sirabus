@@ -46,7 +46,7 @@ class InMemoryCommandRouter(IRouteCommands):
         )
         self._message_pump.register_consumer(consumer)
         self._consumers.append(consumer)
-        headers["topic"] = self._topic_map.get_hierarchical_topic(type(command))
+        headers["topic"] = self._topic_map.get_from_type(type(command))
         headers["reply_to"] = consumer.id
         self._message_pump.publish((headers, message))
         return response_future

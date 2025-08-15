@@ -9,19 +9,19 @@ Feature: Event Handling
     And the other event handlers are not invoked
 
     Examples:
-      | broker_type | serializer | event_type |
-      | amqp        | cloudevent | nested     |
-      | amqp        | cloudevent | test       |
-      | amqp        | pydantic   | nested     |
-      | amqp        | pydantic   | test       |
-      | in-memory   | cloudevent | nested     |
-      | in-memory   | cloudevent | test       |
-      | in-memory   | pydantic   | nested     |
-      | in-memory   | pydantic   | test       |
-      | SQS         | cloudevent | nested     |
-      | SQS         | cloudevent | test       |
-      | SQS         | pydantic   | nested     |
-      | SQS         | pydantic   | test       |
+      | broker_type | serializer | event_type           |
+      | amqp        | cloudevent | test.test_sub.nested |
+      | amqp        | cloudevent | test                 |
+      | amqp        | pydantic   | test.test_sub.nested |
+      | amqp        | pydantic   | test                 |
+      | in-memory   | cloudevent | test.test_sub.nested |
+      | in-memory   | cloudevent | test                 |
+      | in-memory   | pydantic   | test.test_sub.nested |
+      | in-memory   | pydantic   | test                 |
+      | SQS         | cloudevent | test.test_sub.nested |
+      | SQS         | cloudevent | test                 |
+      | SQS         | pydantic   | test.test_sub.nested |
+      | SQS         | pydantic   | test                 |
 
   Scenario Template: Multiple event handling segregation
     Given a running <broker_type> message broker
@@ -32,16 +32,16 @@ Feature: Event Handling
     Then the messages are received by the subscriber
 
     Examples:
-      | broker_type | serializer | event_type |
-      | amqp        | cloudevent | nested     |
-      | amqp        | cloudevent | test       |
-      | amqp        | pydantic   | nested     |
-      | amqp        | pydantic   | test       |
-      | in-memory   | cloudevent | nested     |
-      | in-memory   | cloudevent | test       |
-      | in-memory   | pydantic   | nested     |
-      | in-memory   | pydantic   | test       |
-      | SQS         | cloudevent | nested     |
-      | SQS         | cloudevent | test       |
-      | SQS         | pydantic   | nested     |
-      | SQS         | pydantic   | test       |
+      | broker_type | serializer | event_type           |
+      | amqp        | cloudevent | test.test_sub.nested |
+      | amqp        | cloudevent | test                 |
+      | amqp        | pydantic   | test.test_sub.nested |
+      | amqp        | pydantic   | test                 |
+      | in-memory   | cloudevent | test.test_sub.nested |
+      | in-memory   | cloudevent | test                 |
+      | in-memory   | pydantic   | test.test_sub.nested |
+      | in-memory   | pydantic   | test                 |
+      | SQS         | cloudevent | test.test_sub.nested |
+      | SQS         | cloudevent | test                 |
+      | SQS         | pydantic   | test.test_sub.nested |
+      | SQS         | pydantic   | test                 |

@@ -45,8 +45,6 @@ class ServiceBus(abc.ABC):
         if isinstance(event, BaseEvent):
             await self.handle_event(event, headers)
         elif isinstance(event, BaseCommand):
-            from aett.eventstore import Topic
-
             command_handler = next(
                 (
                     h

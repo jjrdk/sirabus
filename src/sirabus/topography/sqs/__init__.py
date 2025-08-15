@@ -17,7 +17,7 @@ class TopographyBuilder:
 
     def build(self):
         client = self.__config.to_sns_client()
-        for topic in self.__topic_map.get_all_hierarchical_topics():
+        for topic in self.__topic_map.get_all():
             topic_name = topic.replace(".", "_")
             topic_response = client.create_topic(Name=topic_name)
             topic_arn = topic_response.get("TopicArn")

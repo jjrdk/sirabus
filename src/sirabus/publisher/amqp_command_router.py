@@ -47,9 +47,7 @@ class AmqpCommandRouter(IRouteCommands):
     ) -> asyncio.Future[CommandResponse]:
         loop = asyncio.get_event_loop()
         try:
-            topic, hierarchical_topic, j = self._message_writer(
-                command, self._topic_map
-            )
+            _, hierarchical_topic, j = self._message_writer(command, self._topic_map)
         except ValueError:
             future = loop.create_future()
             future.set_result(CommandResponse(success=False, message="unknown command"))
@@ -65,7 +63,7 @@ class AmqpCommandRouter(IRouteCommands):
         response = await exchange.publish(
             message=Message(
                 body=j.encode(),
-                headers={"topic": topic},
+                headers={"topic": hierarchical_topic},
                 correlation_id=command.correlation_id,
                 content_encoding="utf-8",
                 content_type="application/json",

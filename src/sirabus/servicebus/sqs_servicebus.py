@@ -51,7 +51,7 @@ class SqsServiceBus(ServiceBus):
         self.__topics = set(
             topic
             for topic in (
-                self._topic_map.get_hierarchical_topic(get_type_param(handler))
+                self._topic_map.get_from_type(get_type_param(handler))
                 for handler in handlers
                 if isinstance(handler, (IHandleEvents, IHandleCommands))
             )

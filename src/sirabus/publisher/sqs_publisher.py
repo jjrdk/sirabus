@@ -31,7 +31,7 @@ class SqsPublisher(IPublishEvents):
         :param event: The event to publish.
         """
 
-        topic, hierarchical_topic, j = self._event_writer(event, self.__topic_map)
+        _, hierarchical_topic, j = self._event_writer(event, self.__topic_map)
         sns_client = self.__sqs_config.to_sns_client()
         import json
 
@@ -47,7 +47,7 @@ class SqsPublisher(IPublishEvents):
                     "DataType": "String",
                 },
                 "topic": {
-                    "StringValue": self.__topic_map.get_hierarchical_topic(type(event)),
+                    "StringValue": hierarchical_topic,
                     "DataType": "String",
                 },
             },

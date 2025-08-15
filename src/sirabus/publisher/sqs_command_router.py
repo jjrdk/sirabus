@@ -59,9 +59,7 @@ class SqsCommandRouter(IRouteCommands):
                     "DataType": "String",
                 },
                 "topic": {
-                    "StringValue": self.__topic_map.get_hierarchical_topic(
-                        type(command)
-                    ),
+                    "StringValue": self.__topic_map.get_from_type(type(command)),
                     "DataType": "String",
                 },
                 "reply_to": {

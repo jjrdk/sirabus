@@ -31,14 +31,14 @@ class AmqpPublisher(IPublishEvents):
         :param event: The event to publish.
         """
 
-        topic, hierarchical_topic, j = self._event_writer(event, self.__topic_map)
+        _, hierarchical_topic, j = self._event_writer(event, self.__topic_map)
 
         connection = await connect_robust(url=self.__amqp_url)
         channel = await connection.channel()
         exchange = await channel.get_exchange(name="amq.topic", ensure=False)
         self.__logger.debug("Channel opened for publishing event.")
         response = await exchange.publish(
-            message=Message(body=j.encode(), headers={"topic": topic}),
+            message=Message(body=j.encode(), headers={"topic": hierarchical_topic}),
             routing_key=hierarchical_topic,
         )
         self.__logger.debug(f"Published {response}")
