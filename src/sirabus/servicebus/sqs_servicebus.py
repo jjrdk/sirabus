@@ -146,11 +146,14 @@ class SqsServiceBus(ServiceBus):
                         self.handle_message(
                             headers=message_attributes,
                             body=body.get("Message", None),
-                            correlation_id=message_attributes.get("CorrelationId", None)
-                            if "CorrelationId" in message_attributes
+                            message_id=body.get("MessageId", None),
+                            correlation_id=message_attributes.get(
+                                "correlation_id", None
+                            )
+                            if "correlation_id" in message_attributes
                             else None,
-                            reply_to=message_attributes.get("ReplyTo", None)
-                            if "ReplyTo" in message_attributes
+                            reply_to=message_attributes.get("reply_to", None)
+                            if "reply_to" in message_attributes
                             else None,
                         )
                     )
@@ -166,10 +169,34 @@ class SqsServiceBus(ServiceBus):
         self._stopped = True
 
     async def send_command_response(
-        self, response: CommandResponse, correlation_id: str | None, reply_to: str
+        self,
+        response: CommandResponse,
+        message_id: str | None,
+        correlation_id: str | None,
+        reply_to: str,
     ):
         self._logger.debug(
             f"Response published to {reply_to} with correlation_id {correlation_id}."
+        )
+        sqs_client = self.__config.to_sqs_client()
+        topic, body = self.__command_response_writer(response)
+        sqs_client.send_message(
+            QueueUrl=reply_to,
+            MessageBody=body.decode(),
+            MessageAttributes={
+                "topic": {
+                    "DataType": "String",
+                    "StringValue": topic,
+                },
+                "correlation_id": {
+                    "DataType": "String",
+                    "StringValue": correlation_id or "",
+                },
+                "message_id": {
+                    "DataType": "String",
+                    "StringValue": message_id or "",
+                },
+            },
         )
 
     @staticmethod

@@ -37,6 +37,7 @@ class ServiceBus(abc.ABC):
         self,
         headers: dict,
         body: bytes,
+        message_id: str | None,
         correlation_id: str | None,
         reply_to: str | None,
     ) -> None:
@@ -64,6 +65,7 @@ class ServiceBus(abc.ABC):
                     return
                 await self.send_command_response(
                     response=CommandResponse(success=False, message="unknown command"),
+                    message_id=message_id,
                     correlation_id=correlation_id,
                     reply_to=reply_to,
                 )
@@ -75,7 +77,10 @@ class ServiceBus(abc.ABC):
                 )
                 return
             await self.send_command_response(
-                response=response, correlation_id=correlation_id, reply_to=reply_to
+                response=response,
+                message_id=message_id,
+                correlation_id=correlation_id,
+                reply_to=reply_to,
             )
         elif isinstance(event, CommandResponse):
             pass
@@ -97,7 +102,11 @@ class ServiceBus(abc.ABC):
 
     @abc.abstractmethod
     async def send_command_response(
-        self, response: CommandResponse, correlation_id: str | None, reply_to: str
+        self,
+        response: CommandResponse,
+        message_id: str | None,
+        correlation_id: str | None,
+        reply_to: str,
     ) -> None:
         pass
 

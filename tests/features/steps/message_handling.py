@@ -6,7 +6,10 @@ from behave import given, when, then, step, use_step_matcher
 from testcontainers.localstack import LocalStackContainer
 from testcontainers.rabbitmq import RabbitMqContainer
 
-from tests.features.steps.command_handlers import StatusCommandHandler
+from tests.features.steps.command_handlers import (
+    StatusCommandHandler,
+    InfoCommandHandler,
+)
 from sirabus import generate_vhost_name
 from sirabus.message_pump import MessagePump
 from sirabus.topography.amqp import TopographyBuilder as AmqpTopographyBuilder
@@ -34,6 +37,7 @@ def step_impl1(context, broker_type):
         TestEventHandler(wait_handle=context.wait_handle),
         OtherTestEventHandler(wait_handle=context.wait_handle2),
         StatusCommandHandler(),
+        InfoCommandHandler(),
     ]
     match broker_type:
         case "amqp":

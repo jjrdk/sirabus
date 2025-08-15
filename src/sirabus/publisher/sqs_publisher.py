@@ -10,7 +10,7 @@ from sirabus.topography.sqs import SqsConfig
 
 class SqsPublisher(IPublishEvents):
     """
-    Publishes events over AMQP.
+    Publishes events over SQS.
     """
 
     def __init__(
@@ -36,13 +36,13 @@ class SqsPublisher(IPublishEvents):
         import json
 
         metadata = self.__topic_map.get_metadata(hierarchical_topic, "arn")
-        response = sns_client.publish(
+        _ = sns_client.publish(
             TopicArn=metadata,
             Message=json.dumps({"default": j}),
             Subject=hierarchical_topic,
             MessageStructure="json",
             MessageAttributes={
-                "CorrelationId": {
+                "correlation_id": {
                     "StringValue": event.correlation_id,
                     "DataType": "String",
                 },
@@ -52,7 +52,7 @@ class SqsPublisher(IPublishEvents):
                 },
             },
         )
-        self.__logger.debug(f"Published {response}")
+        self.__logger.debug(f"Published {hierarchical_topic}")
 
 
 def create_publisher_for_sqs(

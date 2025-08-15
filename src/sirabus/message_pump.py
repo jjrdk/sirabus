@@ -17,6 +17,7 @@ class MessageConsumer(abc.ABC):
         self,
         headers: dict,
         body: bytes,
+        message_id: str | None,
         correlation_id: str | None,
         reply_to: str | None,
     ) -> None:
@@ -24,6 +25,7 @@ class MessageConsumer(abc.ABC):
         Handle a message with the given headers and body.
         :param headers: The message headers.
         :param body: The message body.
+        :param message_id: The unique identifier of the message.
         :param correlation_id: The correlation ID of the message.
         :param reply_to: The reply-to address for the message.
         """
@@ -76,6 +78,7 @@ class MessagePump:
                             consumer.handle_message(
                                 headers,
                                 body,
+                                message_id=headers.get("message_id"),
                                 correlation_id=headers.get("correlation_id", None),
                                 reply_to=headers.get("reply_to", None),
                             )

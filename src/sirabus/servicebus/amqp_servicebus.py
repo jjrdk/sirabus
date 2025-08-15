@@ -66,7 +66,11 @@ class AmqpServiceBus(ServiceBus):
     async def __inner_handle_message(self, msg: AbstractIncomingMessage):
         try:
             await self.handle_message(
-                msg.headers, msg.body, msg.correlation_id, msg.reply_to
+                headers=msg.headers,
+                body=msg.body,
+                message_id=msg.message_id,
+                correlation_id=msg.correlation_id,
+                reply_to=msg.reply_to,
             )
             await msg.ack()
         except Exception as e:
@@ -93,7 +97,11 @@ class AmqpServiceBus(ServiceBus):
             await self.__connection.close()
 
     async def send_command_response(
-        self, response: CommandResponse, correlation_id: str | None, reply_to: str
+        self,
+        response: CommandResponse,
+        message_id: str | None,
+        correlation_id: str | None,
+        reply_to: str,
     ):
         if not self.__channel or self.__channel.is_closed:
             return

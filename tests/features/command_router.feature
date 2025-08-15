@@ -1,36 +1,41 @@
 Feature: Send commands and receive responses
 
-  Scenario: Send an AMQP command and receive a response with cloudevents
-    Given a running amqp message broker
-    And commands have been registered in the cloudevents AMQP hierarchical topic map
-    And a cloudevent amqp router is configured with the hierarchical topic map
-    When I send the command get_status
-    Then I should receive the reply "status: ok"
+  Scenario Template: Send an command and receive a response
+    Given a running <broker_type> message broker
+    And commands have been registered in the hierarchical topic map
+    And a <serializer> <broker_type> service bus is configured with the hierarchical topic map
+    And a <serializer> <broker_type> router is created with the hierarchical topic map
+    When I send the command <command_type>
+    Then I receive the <response_type> "<response_msg>"
 
-  Scenario: Send an AMQP command and receive a response with pydantic
-    Given a running amqp message broker
-    And commands have been registered in the pydantic AMQP hierarchical topic map
-    And a pydantic amqp service bus is configured with the hierarchical topic map
-    When I send the command get_status
-    Then I should receive the reply "status: ok"
+    Examples:
+      | broker_type | serializer | command_type    | response_type | response_msg    |
+      | amqp        | cloudevent | get_status      | reply         | status: ok      |
+      | amqp        | pydantic   | get_status      | reply         | status: ok      |
+      | SQS         | cloudevent | get_status      | reply         | status: ok      |
+      | SQS         | pydantic   | get_status      | reply         | status: ok      |
+      | in-memory   | cloudevent | get_status      | reply         | status: ok      |
+      | in-memory   | pydantic   | get_status      | reply         | status: ok      |
+      | amqp        | cloudevent | invalid_command | error         | unknown command |
+      | amqp        | pydantic   | invalid_command | error         | unknown command |
+      | in-memory   | cloudevent | invalid_command | error         | unknown command |
+      | in-memory   | pydantic   | invalid_command | error         | unknown command |
+      | SQS         | cloudevent | invalid_command | error         | unknown command |
+      | SQS         | pydantic   | invalid_command | error         | unknown command |
 
-  Scenario: Send an in-memory command and receive a response
-    Given a running in-memory message broker
-    And a cloudevent in-memory service bus is configured with the hierarchical topic map
-    And commands have been registered in the in-memory hierarchical topic map
-    When I send the command get_status
-    Then I should receive the reply "status: ok"
-
-  Scenario: Send an invalid command and receive an error
-    Given a running amqp message broker
-    And commands have been registered in the cloudevents AMQP hierarchical topic map
-    And a cloudevent amqp router is configured with the hierarchical topic map
-    When I send the command invalid_command
-    Then I should receive the error "unknown command"
-
-  Scenario: Send multiple commands and receive their responses
-    Given a running amqp message broker
-    And commands have been registered in the cloudevents AMQP hierarchical topic map
-    And a cloudevent amqp router is configured with the hierarchical topic map
+  Scenario Template: Send multiple commands and receive their responses
+    Given a running <broker_type> message broker
+    And commands have been registered in the hierarchical topic map
+    And a <serializer> <broker_type> service bus is configured with the hierarchical topic map
+    And a <serializer> <broker_type> router is created with the hierarchical topic map
     When I send the commands "get_status", "get_info"
-    Then I should receive the replies "status: ok", "info: system running"
+    Then I receive the replies "status: ok", "info: system running"
+
+    Examples:
+      | broker_type | serializer |
+      | amqp        | cloudevent |
+      | amqp        | pydantic   |
+      | SQS        | cloudevent |
+      | SQS        | pydantic   |
+      | in-memory   | cloudevent |
+      | in-memory   | pydantic   |
