@@ -12,6 +12,7 @@ test: install_dependencies
 	.venv/bin/ruff format
 	# Run tests using behave
 	.venv/bin/behave tests/features --no-capture-stderr --no-capture-stdout --junit --junit-directory reports -f pretty
+	python3 -m junit_to_markdown
 
 build: install_dependencies test
 	# Build the project using uv
