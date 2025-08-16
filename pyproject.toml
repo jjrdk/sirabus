@@ -10,6 +10,10 @@ requires-python = ">=3.13"
 dependencies = [
     "aett>=3.3.0",
 ]
+package-dir = { "" = "src" }
+packages = [
+    { include = "sirabus" }
+]
 
 [project.optional-dependencies]
 amqp = [
