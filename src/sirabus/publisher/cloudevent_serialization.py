@@ -125,7 +125,7 @@ def create_command_response(
     :param command_response: The command response to create a CloudEvent for.
     :return: A tuple containing the topic and the CloudEvent JSON string.
     :raises ValueError: If the command response type is not found in the Topic enum.
-    :raises TypeError: If the command response type is not a subclass of BaseModel
+    :raises TypeError: If the command response type is not a subclass of BaseModel.
     """
     topic = Topic.get(type(command_response))
     a = CloudEventAttributes(
