@@ -90,7 +90,7 @@ def create_command[TCommand: BaseCommand](
     :param topic_map: The hierarchical topic map to find the topic for the command type.
     :return: A tuple containing the topic, hierarchical topic, and the CloudEvent JSON string.
     :raises ValueError: If the topic for the command type is not found in the hierarchical_topic_map.
-    :raises TypeError: If the command type is not a subclass of BaseModel
+    :raises TypeError: If the command type is not a subclass of BaseModel.
     """
     command_type = type(command)
     topic = Topic.get(command_type)
