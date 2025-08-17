@@ -54,7 +54,7 @@ def create_event[TEvent: BaseEvent](
     :param topic_map: The hierarchical topic map to find the topic for the event type.
     :return: A tuple containing the topic, hierarchical topic, and the CloudEvent JSON string.
     :raises ValueError: If the topic for the event type is not found in the hierarchical_topic_map.
-    :raises TypeError: If the event type is not a subclass of BaseModel
+    :raises TypeError: If the event type is not a subclass of BaseModel.
     """
     event_type = type(event)
     topic = Topic.get(event_type)
