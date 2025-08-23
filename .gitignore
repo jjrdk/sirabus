@@ -11,4 +11,4 @@ wheels/
 .idea
 .DS_Store
 reports
-test_report.txt
+test_report.*

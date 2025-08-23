@@ -22,6 +22,10 @@ Feature: Event Handling
       | SQS         | cloudevent | test                 |
       | SQS         | pydantic   | test.test_sub.nested |
       | SQS         | pydantic   | test                 |
+      | redis       | cloudevent | test.test_sub.nested |
+      | redis       | cloudevent | test                 |
+      | redis       | pydantic   | test.test_sub.nested |
+      | redis       | pydantic   | test                 |
 
   Scenario Template: Multiple event handling segregation
     Given a running <broker_type> message broker
@@ -45,3 +49,7 @@ Feature: Event Handling
       | SQS         | cloudevent | test                 |
       | SQS         | pydantic   | test.test_sub.nested |
       | SQS         | pydantic   | test                 |
+      | redis       | cloudevent | test.test_sub.nested |
+      | redis       | cloudevent | test                 |
+      | redis       | pydantic   | test.test_sub.nested |
+      | redis       | pydantic   | test                 |
