@@ -1,14 +1,14 @@
 [project]
 name = "sirabus"
 version = "0.0.0"
-description = "Message broker application pattern for Python using AMQP or SQS."
+description = "Service Bus application pattern for Python using AMQP, SQS or Redis."
 readme = "README.md"
 authors = [
     { name = "Jacob Reimers", email = "pypi@reimers.io" }
 ]
 requires-python = ">=3.13"
 dependencies = [
-    "aett>=3.3.0",
+    "aett>=3.3.1",
 ]
 packages = [
     { include = "sirabus" }

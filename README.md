@@ -1,5 +1,7 @@
 # SiraBus
 
+[![Downloads](https://static.pepy.tech/badge/sirabus)](https://pepy.tech/project/sirabus)
+
 SiraBus is a simple opinionated library for publishing and subscribing to events in an asynchronous and type-safe
 manner (to the extent that type safety can be achieved in Python).
 
@@ -41,7 +43,7 @@ asyncio.run(service_bus.run())
 The `run` method starts the service bus and begins consuming messages from RabbitMQ.
 The `stop` method should be called to gracefully shut down the service bus and close the connection to RabbitMQ.
 
-The [message handling feature](tests/features/message_handling.feature) sets up a simple example of how to use the
+The [message handling feature](https://github.com/jjrdk/sirabus/blob/master/tests/features/message_handling.feature) sets up a simple example of how to use the
 library. It sets up a service bus, registers a handler for a specific event type, and then publishes an event.
 The handler receives the event and processes it.
 
@@ -54,10 +56,11 @@ SiraBus supports the following message transport protocols:
 | In-Memory | For local development and testing. |
 | AMQP      | For production use with RabbitMQ.  |
 | SQS       | For production use with AWS SQS.   |
+| Redis     | For production use with Redis.     |
 
 ## Specific Topics
 
-- [Service Bus](docs/service_bus.md): Overview of the service bus and its components.
-- [Hierarchical Topics](docs/hierarchical_topics.md): Explanation of hierarchical topics and how to use them.
-- [Event Handling](docs/event_handling.md): How to handle events using the service bus.
-- [Command Handling](docs/command_handling.md): How to handle commands using the service bus.
+- [Service Bus](https://github.com/jjrdk/sirabus/blob/master/docs/service_bus.md): Overview of the service bus and its components.
+- [Hierarchical Topics](https://github.com/jjrdk/sirabus/blob/master/docs/hierarchical_topics.md): Explanation of hierarchical topics and how to use them.
+- [Event Handling](https://github.com/jjrdk/sirabus/blob/master/docs/event_handling.md): How to handle events using the service bus.
+- [Command Handling](https://github.com/jjrdk/sirabus/blob/master/docs/command_handling.md): How to handle commands using the service bus.
