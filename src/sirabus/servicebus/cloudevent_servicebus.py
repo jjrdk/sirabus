@@ -14,6 +14,38 @@ def create_servicebus_for_amqp_cloudevent(
     handlers: List[IHandleEvents | IHandleCommands],
     prefetch_count: int = 10,
 ) -> ServiceBus:
+    """
+    Create a ServiceBus instance for AMQP using CloudEvents serialization.
+    :param amqp_url: The AMQP URL for the service bus.
+    :param topic_map: The hierarchical topic map for topic resolution.
+    :param handlers: A list of event and command handlers.
+    :param prefetch_count: The number of messages to prefetch from the service bus.
+    :return: An instance of AmqpServiceBus.
+    :raises ValueError: If the topic map is not provided.
+    :raises TypeError: If the handlers are not instances of IHandleEvents or IHandleCommands.
+    :raises Exception: If there is an error during service bus creation.
+    :note: This function uses CloudEvents serialization for message handling.
+    :example:
+        >>> from sirabus import create_servicebus_for_amqp_cloudevent, HierarchicalTopicMap, IHandleEvents
+        >>> import logging
+        >>> class MyEventHandler(IHandleEvents):
+        ...     async def handle(self, event, headers):
+        ...         print(f"Handling event: {event} with headers: {headers}")
+        >>> topic_map = HierarchicalTopicMap()
+        >>> handlers = [MyEventHandler()]
+        >>> amqp_url = "amqp://guest:guest@localhost/"
+        >>> service_bus = create_servicebus_for_amqp_cloudevent(
+        ...     amqp_url=amqp_url,
+        ...     topic_map=topic_map,
+        ...     handlers=handlers,
+        ...     prefetch_count=10,
+        ... )
+        >>> logging.basicConfig(level=logging.DEBUG)
+        >>> service_bus.run()
+    :note: The `run` method starts the service bus and begins consuming messages from RabbitMQ.
+           The `stop` method should be called to gracefully shut down the service bus and close
+           the connection to RabbitMQ.
+    """
     from sirabus.servicebus.amqp_servicebus import AmqpServiceBus
     from sirabus.publisher.cloudevent_serialization import (
         write_cloudevent_message,
@@ -37,6 +69,44 @@ def create_servicebus_for_sqs(
     prefetch_count: int = 10,
     logger: Optional[logging.Logger] = None,
 ) -> ServiceBus:
+    """
+    Create a ServiceBus instance for SQS using CloudEvents serialization.
+    :param config: The SQS configuration for the service bus.
+    :param topic_map: The hierarchical topic map for topic resolution.
+    :param handlers: A list of event and command handlers.
+    :param prefetch_count: The number of messages to prefetch from the service bus.
+    :param logger: Optional logger for logging.
+    :return: An instance of SqsServiceBus.
+    :raises ValueError: If the topic map is not provided.
+    :raises TypeError: If the handlers are not instances of IHandleEvents or IHandleCommands.
+    :raises Exception: If there is an error during service bus creation.
+    :note: This function uses CloudEvents serialization for message handling.
+    :example:
+        >>> from sirabus import create_servicebus_for_sqs, SqsConfig, HierarchicalTopicMap, IHandleEvents
+        >>> import logging
+        >>> class MyEventHandler(IHandleEvents):
+        ...     async def handle(self, event, headers):
+        ...         print(f"Handling event: {event} with headers: {headers}")
+        >>> config = SqsConfig(
+        ...     aws_access_key_id="your_access_key",
+        ...     aws_secret_access_key="your_secret_key",
+        ...     region="us-east-1",
+        ... )
+        >>> topic_map = HierarchicalTopicMap()
+        >>> handlers = [MyEventHandler()]
+        >>> service_bus = create_servicebus_for_sqs(
+        ...     config=config,
+        ...     topic_map=topic_map,
+        ...     handlers=handlers,
+        ...     prefetch_count=10,
+        ...     logger=logging.getLogger("SqsServiceBus"),
+        ... )
+        >>> logging.basicConfig(level=logging.DEBUG)
+        >>> service_bus.run()
+    :note: The `run` method starts the service bus and begins consuming messages from SQS.
+           The `stop` method should be called to gracefully shut down the service bus and close
+           the connection to SQS.
+    """
     from sirabus.publisher.cloudevent_serialization import (
         write_cloudevent_message,
         create_command_response,
@@ -60,6 +130,35 @@ def create_servicebus_for_inmemory(
     handlers: List[IHandleEvents | IHandleCommands],
     message_pump: MessagePump,
 ) -> ServiceBus:
+    """
+    Create a ServiceBus instance for in-memory message handling using CloudEvents serialization.
+    :param topic_map: The hierarchical topic map for topic resolution.
+    :param handlers: A list of event and command handlers.
+    :param message_pump: The message pump for processing messages.
+    :return: An instance of InMemoryServiceBus.
+    :raises ValueError: If the topic map is not provided.
+    :raises TypeError: If the handlers are not instances of IHandleEvents or IHandleCommands.
+    :raises Exception: If there is an error during service bus creation.
+    :note: This function uses CloudEvents serialization for message handling.
+    :example:
+        >>> from sirabus import create_servicebus_for_inmemory, HierarchicalTopicMap, IHandleEvents
+        >>> import logging
+        >>> class MyEventHandler(IHandleEvents):
+        ...     async def handle(self, event, headers):
+        ...         print(f"Handling event: {event} with headers: {headers}")
+        >>> topic_map = HierarchicalTopicMap()
+        >>> handlers = [MyEventHandler()]
+        >>> message_pump = MessagePump()
+        >>> service_bus = create_servicebus_for_inmemory(
+        ...     topic_map=topic_map,
+        ...     handlers=handlers,
+        ...     message_pump=message_pump,
+        ... )
+        >>> logging.basicConfig(level=logging.DEBUG)
+        >>> service_bus.run()
+    :note: The `run` method starts the service bus and begins processing messages in memory.
+           The `stop` method should be called to gracefully shut down the service bus.
+    """
     from sirabus.publisher.cloudevent_serialization import create_command_response
 
     from sirabus.publisher.cloudevent_serialization import write_cloudevent_message

@@ -12,6 +12,13 @@ def create_amqp_router(
     topic_map: HierarchicalTopicMap,
     logger: Optional[logging.Logger] = None,
 ) -> IRouteCommands:
+    """
+    Creates an AmqpCommandRouter for routing commands over AMQP.
+    :param amqp_url: The AMQP URL.
+    :param topic_map: The hierarchical topic map.
+    :param logger: Optional logger.
+    :return: An AmqpCommandRouter instance.
+    """
     from sirabus.publisher.pydantic_serialization import create_command
 
     from sirabus.publisher.pydantic_serialization import read_command_response
@@ -30,6 +37,13 @@ def create_sqs_router(
     topic_map: HierarchicalTopicMap,
     logger: Optional[logging.Logger] = None,
 ) -> IRouteCommands:
+    """
+    Creates an SqsCommandRouter for routing commands over SQS.
+    :param config: The SQS configuration.
+    :param topic_map: The hierarchical topic map.
+    :param logger: Optional logger.
+    :return: An SqsCommandRouter instance.
+    """
     from sirabus.publisher.pydantic_serialization import create_command
     from sirabus.publisher.pydantic_serialization import read_command_response
     from sirabus.publisher.sqs_command_router import SqsCommandRouter
@@ -48,6 +62,13 @@ def create_inmemory_router(
     topic_map: HierarchicalTopicMap,
     logger: Optional[logging.Logger] = None,
 ) -> IRouteCommands:
+    """
+    Creates an InMemoryCommandRouter for routing commands in memory.
+    :param message_pump: The message pump to use for in-memory routing.
+    :param topic_map: The hierarchical topic map.
+    :param logger: Optional logger.
+    :return: An InMemoryCommandRouter instance.
+    """
     from sirabus.publisher.pydantic_serialization import (
         create_command,
         read_command_response,

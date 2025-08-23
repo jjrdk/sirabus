@@ -72,13 +72,13 @@ async def step_impl2(context, serializer, broker_type):
 async def step_impl3(context, topic):
     command_type = context.topic_map.get(topic) or InvalidCommand
     context.future = await context.router.route(
-            command_type(
-                aggregate_id="test",
-                version=1,
-                timestamp=datetime.now(timezone.utc),
-                correlation_id=str(uuid.uuid4()),
-            )
+        command_type(
+            aggregate_id="test",
+            version=1,
+            timestamp=datetime.now(timezone.utc),
+            correlation_id=str(uuid.uuid4()),
         )
+    )
 
 
 @then('I receive the (?P<reply_type>error|reply) "(?P<message>.+?)"')
@@ -103,22 +103,22 @@ async def step_impl4(context, reply_type, message):
 async def step_impl5(context, topic1, topic2):
     command_type1 = context.topic_map.get(topic1)
     context.future1 = await context.router.route(
-            command_type1(
-                aggregate_id="test",
-                version=1,
-                timestamp=datetime.now(timezone.utc),
-                correlation_id=str(uuid.uuid4()),
-            )
+        command_type1(
+            aggregate_id="test",
+            version=1,
+            timestamp=datetime.now(timezone.utc),
+            correlation_id=str(uuid.uuid4()),
         )
+    )
     command_type2 = context.topic_map.get(topic2)
     context.future2 = await context.router.route(
-            command_type2(
-                aggregate_id="test",
-                version=1,
-                timestamp=datetime.now(timezone.utc),
-                correlation_id=str(uuid.uuid4()),
-            )
+        command_type2(
+            aggregate_id="test",
+            version=1,
+            timestamp=datetime.now(timezone.utc),
+            correlation_id=str(uuid.uuid4()),
         )
+    )
 
 
 @then('I receive the replies "(?P<msg1>.+?)", "(?P<msg2>.+?)"')

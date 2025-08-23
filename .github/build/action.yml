@@ -19,9 +19,7 @@ runs:
       shell: bash
     - name: Run tests
       run: |
-        .venv/bin/behave tests/features --junit --junit-directory reports -f pretty
-        tar -czf test_reports.tar.gz reports/*.xml
-        echo 'Wrote test report to test_reports.tar.gz'
+        uv run behave
       shell: bash
     - name: Build package
       run: |

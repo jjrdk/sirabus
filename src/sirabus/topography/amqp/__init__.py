@@ -8,11 +8,35 @@ from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 
 
 class TopographyBuilder:
+    """
+    Builds the topography for the AMQP service bus by declaring exchanges and binding them according to the
+    hierarchical topic map.
+    """
+
     def __init__(self, amqp_url: str, topic_map: HierarchicalTopicMap) -> None:
+        """
+        Initializes the TopographyBuilder with the AMQP URL and topic map.
+        :param amqp_url: The AMQP URL for the service bus.
+        :param topic_map: The hierarchical topic map for topic resolution.
+        :raises ValueError: If the topic map is not provided.
+        :raises TypeError: If the topic map is not an instance of HierarchicalTopicMap.
+        :raises Exception: If there is an error during topography building.
+        """
         self.__amqp_url = amqp_url
         self.__topic_map = topic_map
 
     async def build(self) -> None:
+        """
+        Builds the topography by connecting to the AMQP server, declaring exchanges, and binding them according to the
+        hierarchical topic map.
+        :raises Exception: If there is an error during the connection or topography building.
+        :return: None
+        :raises aio_pika.exceptions.AMQPConnectionError: If the connection to the AMQP server fails.
+        :raises aio_pika.exceptions.ChannelClosed: If the channel is closed unexpectedly.
+        :raises aio_pika.exceptions.ExchangeDeclareError: If there is an error declaring an exchange.
+        :raises aio_pika.exceptions.ExchangeBindError: If there is an error binding an exchange.
+        :raises aio_pika.exceptions.AMQPError: For any other AMQP-related errors
+        """
         connection: AbstractRobustConnection = await aio_pika.connect_robust(
             url=self.__amqp_url
         )

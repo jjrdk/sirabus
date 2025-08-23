@@ -21,8 +21,14 @@ jobs:
       - uses: ./.github/build
         with:
           release-tag: ${{ github.event.release.tag_name }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: test_report.txt
+          if-no-files-found: warn
+          retention-days: 90
       - name: Publish package
-        uses: pypa/gh-action-pypi-publish@v1.8.14
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}

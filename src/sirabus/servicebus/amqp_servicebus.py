@@ -16,7 +16,55 @@ from sirabus.servicebus import ServiceBus
 
 class AmqpServiceBus(ServiceBus):
     """
-    Base class for event handlers.
+    An implementation of the ServiceBus that uses AMQP (Advanced Message Queuing Protocol)
+    for communication with RabbitMQ. This class is designed to handle both events and commands
+    using a hierarchical topic map for routing messages.
+    It supports asynchronous message handling and allows for command responses to be sent back
+    to the requester.
+    :param amqp_url: The AMQP URL to connect to RabbitMQ.
+    :param topic_map: The topic map to use for resolving topics.
+    :param handlers: The list of event and command handlers to register.
+    :param message_reader: A callable that reads messages from the topic map and returns a tuple
+                         containing the headers and the BaseEvent instance.
+    :param command_response_writer: A callable that writes command responses to the appropriate topic.
+    :param prefetch_count: The number of messages to prefetch from RabbitMQ.
+    :param logger: An optional logger instance for logging messages.
+    :type amqp_url: str
+    :type topic_map: HierarchicalTopicMap
+    :type handlers: List[IHandleEvents | IHandleCommands]
+    :type message_reader: Callable[[HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent]]
+    :type command_response_writer: Callable[[CommandResponse], Tuple[str, bytes]]
+    :type prefetch_count: int
+    :type logger: Optional[logging.Logger]
+    :raises ValueError: If the AMQP URL is invalid or if no handlers are provided.
+    :raises RuntimeError: If the connection to RabbitMQ cannot be established.
+    :raises Exception: For any other exceptions that occur during message handling.
+    :note: This class is designed to be used in an asynchronous context, and it requires
+           an event loop to run the `run` method. The `stop` method should be called to
+           gracefully shut down the service bus and close the connection to RabbitMQ.
+    :example:
+        >>> from sirabus import AmqpServiceBus, HierarchicalTopicMap, IHandleEvents
+        >>> import asyncio
+        >>> class MyEventHandler(IHandleEvents):
+        ...     async def handle(self, event, headers):
+        ...         print(f"Handling event: {event} with headers: {headers}")
+        >>> topic_map = HierarchicalTopicMap()
+        >>> handlers = [MyEventHandler()]
+        >>> amqp_url = "amqp://guest:guest@localhost/"
+        >>> message_reader = lambda topic_map, headers, body: (headers, BaseEvent.from_json(body))
+        >>> command_response_writer = lambda response: ("response_topic", response.to_json().encode('utf-8'))
+        >>> service_bus = AmqpServiceBus(
+        ...     amqp_url=amqp_url,
+        ...     topic_map=topic_map,
+        ...     handlers=handlers,
+        ...     message_reader=message_reader,
+        ...     command_response_writer=command_response_writer,
+        ...     prefetch_count=10,
+        ... )
+        >>> asyncio.run(service_bus.run())
+    :note: The `run` method starts the service bus and begins consuming messages from RabbitMQ.
+           The `stop` method should be called to gracefully shut down the service bus and close
+           the connection to RabbitMQ.
     """
 
     def __init__(

@@ -122,6 +122,25 @@ def get_type_param(instance: IHandleCommands | IHandleEvents) -> type:
 
 
 class SqsConfig:
+    """
+    Configuration class for SQS/SNS clients.
+    This class is used to define the configuration for AWS SQS and SNS clients.
+    It allows you to specify AWS credentials, region, endpoint URL, and whether to use TLS.
+    If a profile name is provided, the access key ID and secret access key are disregarded
+    and the profile credentials are used instead.
+    :param aws_access_key_id: The AWS access key ID.
+    :param aws_secret_access_key: The AWS secret access key.
+    :param aws_session_token: The AWS session token (optional).
+    :param profile_name: The AWS profile name (optional).
+    :param region: The AWS region (default is "us-east-1").
+    :param endpoint_url: The endpoint URL for the SQS/SNS service (optional).
+    :param use_tls: Whether to use TLS for the connection (default is True).
+    :raises ValueError: If the profile name is provided but the access key ID or secret access key is also provided.
+    :raises TypeError: If the provided parameters are not of the expected types.
+    :raises Exception: If there is an error during client creation or configuration.
+    :return: An instance of SqsConfig that can be used to create SQS and SNS clients.
+    """
+
     def __init__(
         self,
         aws_access_key_id: str | None = None,
@@ -154,6 +173,15 @@ class SqsConfig:
         self._profile_name = profile_name
 
     def to_sns_client(self):
+        """
+        Creates an SNS client using the provided configuration.
+        :return: An SNS client configured with the specified AWS credentials and settings.
+        :raises ValueError: If the profile name is provided but the access key ID or secret access key is also provided.
+        :raises TypeError: If the provided parameters are not of the expected types.
+        :raises Exception: If there is an error during client creation or configuration.
+        :rtype: boto3.client
+        :raises boto3.exceptions.Boto3Error: If there is an error during client creation
+        """
         from boto3 import Session
 
         session = Session(
@@ -170,6 +198,15 @@ class SqsConfig:
         )
 
     def to_sqs_client(self):
+        """
+        Creates an SQS client using the provided configuration.
+        :return: An SQS client configured with the specified AWS credentials and settings.
+        :raises ValueError: If the profile name is provided but the access key ID or secret access key is also provided.
+        :raises TypeError: If the provided parameters are not of the expected types.
+        :raises Exception: If there is an error during client creation or configuration.
+        :rtype: boto3.client
+        :raises boto3.exceptions.Boto3Error: If there is an error during client creation
+        """
         from boto3 import Session
 
         session = Session(

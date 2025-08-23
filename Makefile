@@ -9,9 +9,10 @@ update:
 
 test: install_dependencies
 	# Apply linter before running tests
-	.venv/bin/ruff format
+	uv run ruff format
 	# Run tests using behave
-	.venv/bin/behave tests/features --no-capture-stderr --no-capture-stdout --junit --junit-directory reports -f pretty
+	uv run behave
+	python3 -m junit_to_markdown
 
 build: install_dependencies test
 	# Build the project using uv
