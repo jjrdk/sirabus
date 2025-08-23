@@ -54,7 +54,7 @@ def create_event[TEvent: BaseEvent](
     :param topic_map: The hierarchical topic map to find the topic for the event type.
     :return: A tuple containing the topic, hierarchical topic, and the CloudEvent JSON string.
     :raises ValueError: If the topic for the event type is not found in the hierarchical_topic_map.
-    :raises TypeError: If the event type is not a subclass of BaseModel
+    :raises TypeError: If the event type is not a subclass of BaseModel.
     """
     event_type = type(event)
     topic = Topic.get(event_type)
@@ -90,7 +90,7 @@ def create_command[TCommand: BaseCommand](
     :param topic_map: The hierarchical topic map to find the topic for the command type.
     :return: A tuple containing the topic, hierarchical topic, and the CloudEvent JSON string.
     :raises ValueError: If the topic for the command type is not found in the hierarchical_topic_map.
-    :raises TypeError: If the command type is not a subclass of BaseModel
+    :raises TypeError: If the command type is not a subclass of BaseModel.
     """
     command_type = type(command)
     topic = Topic.get(command_type)
@@ -125,7 +125,7 @@ def create_command_response(
     :param command_response: The command response to create a CloudEvent for.
     :return: A tuple containing the topic and the CloudEvent JSON string.
     :raises ValueError: If the command response type is not found in the Topic enum.
-    :raises TypeError: If the command response type is not a subclass of BaseModel
+    :raises TypeError: If the command response type is not a subclass of BaseModel.
     """
     topic = Topic.get(type(command_response))
     a = CloudEventAttributes(

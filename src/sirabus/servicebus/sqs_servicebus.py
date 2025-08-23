@@ -41,7 +41,7 @@ class SqsServiceBus(ServiceBus):
     It is thread-safe and can be used in a multi-threaded environment.
     It supports hierarchical topic mapping and can handle both events and commands.
     It is designed to work with AWS credentials and SQS queue configurations provided in the SqsConfig object.
-    It also allows for prefetching messages from the SQS queue to improve performance
+    It also allows for prefetching messages from the SQS queue to improve performance.
     """
 
     def __init__(
