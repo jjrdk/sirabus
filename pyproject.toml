@@ -36,6 +36,13 @@ dev = [
     "boto3-stubs>=1.40",
 ]
 
+[tool.behave]
+capture = false
+junit = false
+logging_level = "FATAL"
+outfiles = ["test_report.txt"]
+paths = ["tests/features"]
+
 [build-system]
 requires = ["uv_build>=0.8.0,<0.9"]
 build-backend = "uv_build"
