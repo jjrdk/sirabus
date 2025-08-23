@@ -5,6 +5,7 @@ import asyncio
 from behave import given, when, then, step, use_step_matcher
 from testcontainers.localstack import LocalStackContainer
 from testcontainers.rabbitmq import RabbitMqContainer
+from testcontainers.redis import RedisContainer
 
 from tests.features.steps.command_handlers import (
     StatusCommandHandler,
@@ -46,6 +47,8 @@ def step_impl1(context, broker_type):
             set_up_sqs_broker(context)
         case "in-memory":
             pass
+        case "redis":
+            set_up_redis(context)
         case _:
             raise ValueError(f"Unknown broker type: {broker_type}")
 
@@ -82,6 +85,15 @@ def set_up_sqs_broker(context):
     )
 
 
+def set_up_redis(context):
+    container = (
+        RedisContainer()
+        .start()
+    )
+    context.connection_string = f"redis://{container.get_container_host_ip()}:{container.get_exposed_port(6379)}"
+    context.containers.append(container)
+
+
 @step("events have been registered in the hierarchical topic map")
 def step_impl2(context):
     context.topic_map.register(TestEvent)
@@ -107,6 +119,10 @@ async def step_impl3(context, serializer, broker_type):
             configure_cloudevent_inmemory_service_bus(context)
         case ("pydantic", "in-memory"):
             configure_pydantic_inmemory_service_bus(context)
+        case ("cloudevent", "redis"):
+            configure_cloudevent_redis_service_bus(context)
+        case ("pydantic", "redis"):
+            configure_pydantic_redis_service_bus(context)
 
     await context.consumer.run()
     logging.debug("Topography built.")
@@ -184,6 +200,26 @@ def configure_cloudevent_inmemory_service_bus(context):
     context.consumer = bus
 
 
+def configure_cloudevent_redis_service_bus(context):
+    from sirabus.servicebus.cloudevent_servicebus import create_servicebus_for_redis
+    bus = create_servicebus_for_redis(
+        redis_url=context.connection_string,
+        topic_map=context.topic_map,
+        handlers=context.handlers,
+    )
+    context.consumer = bus
+
+
+def configure_pydantic_redis_service_bus(context):
+    from sirabus.servicebus.pydantic_servicebus import create_servicebus_for_redis
+    bus = create_servicebus_for_redis(
+        redis_url=context.connection_string,
+        topic_map=context.topic_map,
+        handlers=context.handlers,
+    )
+    context.consumer = bus
+
+
 def configure_pydantic_inmemory_service_bus(context):
     context.message_pump = MessagePump()
     context.message_pump.start()
@@ -221,6 +257,10 @@ async def step_impl4(context, serializer, topic, broker_type):
             publisher = create_cloudevent_inmemory_publisher(context)
         case ("pydantic", "in-memory"):
             publisher = create_pydantic_inmemory_publisher(context)
+        case ("cloudevent", "redis"):
+            publisher = create_cloudevent_redis_publisher(context)
+        case ("pydantic", "redis"):
+            publisher = create_pydantic_redis_publisher(context)
     await publisher.publish(event)
 
 
@@ -264,11 +304,27 @@ def create_cloudevent_inmemory_publisher(context):
     )
 
 
+def create_cloudevent_redis_publisher(context):
+    from sirabus.publisher.cloudevent_publisher import create_publisher_for_redis
+
+    return create_publisher_for_redis(
+        redis_url=context.connection_string, topic_map=context.topic_map
+    )
+
+
 def create_pydantic_inmemory_publisher(context):
     from sirabus.publisher.pydantic_publisher import create_publisher_for_inmemory
 
     return create_publisher_for_inmemory(
         message_pump=context.message_pump, topic_map=context.topic_map
+    )
+
+
+def create_pydantic_redis_publisher(context):
+    from sirabus.publisher.pydantic_publisher import create_publisher_for_redis
+
+    return create_publisher_for_redis(
+        redis_url=context.connection_string, topic_map=context.topic_map
     )
 
 

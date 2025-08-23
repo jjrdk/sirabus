@@ -31,7 +31,7 @@ class IRouteCommands(ABC):
 
     @abstractmethod
     async def route[TCommand: BaseCommand](
-        self, command: TCommand
+        self, command: TCommand, **kwargs
     ) -> asyncio.Future[CommandResponse]:
         """
         Route a command.

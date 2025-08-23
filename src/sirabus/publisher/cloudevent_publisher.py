@@ -70,3 +70,23 @@ def create_publisher_for_inmemory(
         logger=logger,
         event_writer=create_event,
     )
+
+
+def create_publisher_for_redis(
+        redis_url: str,
+        topic_map: HierarchicalTopicMap,
+        logger: logging.Logger | None = None,
+) -> IPublishEvents:
+    """
+    Creates a CloudEventPublisher for SQS.
+    :param redis_url: The Redis connection URL.
+    :param topic_map: The hierarchical topic map.
+    :param logger: Optional logger.
+    :return: A CloudEventPublisher instance.
+    """
+    from sirabus.publisher.cloudevent_serialization import create_event
+    from sirabus.publisher.redis_publisher import RedisPublisher
+
+    return RedisPublisher(
+        redis_url=redis_url, topic_map=topic_map, event_writer=create_event, logger=logger
+    )

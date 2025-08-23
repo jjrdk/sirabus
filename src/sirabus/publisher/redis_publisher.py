@@ -1,28 +1,29 @@
+import json
 import logging
+import uuid
 from typing import Callable, Tuple
 
 from aett.eventstore import BaseEvent
 
 from sirabus import IPublishEvents
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
-from sirabus.topography.sqs import SqsConfig
 
 
-class SqsPublisher(IPublishEvents):
+class RedisPublisher(IPublishEvents):
     """
     Publishes events over SQS.
     """
 
     def __init__(
-        self,
-        sqs_config: SqsConfig,
-        topic_map: HierarchicalTopicMap,
-        event_writer: Callable[[BaseEvent, HierarchicalTopicMap], Tuple[str, str, str]],
-        logger: logging.Logger | None = None,
+            self,
+            redis_url: str,
+            topic_map: HierarchicalTopicMap,
+            event_writer: Callable[[BaseEvent, HierarchicalTopicMap], Tuple[str, str, str]],
+            logger: logging.Logger | None = None,
     ) -> None:
         """
         Initializes the SqsPublisher.
-        :param sqs_config: The SQS configuration.
+        :param redis_url: The Redis connection URL.
         :param topic_map: The hierarchical topic map for topic resolution.
         :param event_writer: A callable that writes the event to a message.
         :param logger: Optional logger for logging.
@@ -31,7 +32,7 @@ class SqsPublisher(IPublishEvents):
         :raises Exception: If there is an error during message publishing.
         :return: None
         """
-        self.__sqs_config = sqs_config
+        self.__redis_url = redis_url
         self._event_writer = event_writer
         self.__topic_map = topic_map
         self.__logger = logger or logging.getLogger("SqsPublisher")
@@ -43,24 +44,8 @@ class SqsPublisher(IPublishEvents):
         """
 
         _, hierarchical_topic, j = self._event_writer(event, self.__topic_map)
-        sns_client = self.__sqs_config.to_sns_client()
-        import json
-
-        metadata = self.__topic_map.get_metadata(hierarchical_topic, "arn")
-        _ = sns_client.publish(
-            TopicArn=metadata,
-            Message=json.dumps({"default": j}),
-            Subject=hierarchical_topic,
-            MessageStructure="json",
-            MessageAttributes={
-                "correlation_id": {
-                    "StringValue": event.correlation_id,
-                    "DataType": "String",
-                },
-                "topic": {
-                    "StringValue": hierarchical_topic,
-                    "DataType": "String",
-                },
-            },
-        )
-        self.__logger.debug(f"Published {hierarchical_topic}")
+        from redis.asyncio import Redis
+        async with Redis.from_url(self.__redis_url) as redis:
+            msg = {'message_id': str(uuid.uuid4()), 'body': j, 'correlation_id': str(event.correlation_id)}
+            await redis.publish(hierarchical_topic, json.dumps(msg))
+            self.__logger.debug(f"Published {hierarchical_topic}")
