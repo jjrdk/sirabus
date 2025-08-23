@@ -1,5 +1,7 @@
 # SiraBus
 
+[![Downloads](https://static.pepy.tech/badge/sirabus)](https://pepy.tech/project/sirabus)
+
 SiraBus is a simple opinionated library for publishing and subscribing to events in an asynchronous and type-safe
 manner (to the extent that type safety can be achieved in Python).
 
