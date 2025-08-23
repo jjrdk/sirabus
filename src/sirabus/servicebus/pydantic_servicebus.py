@@ -83,7 +83,7 @@ def create_servicebus_for_sqs(
 
 
 def create_servicebus_for_redis(
-        redis_url: str,
+    redis_url: str,
     topic_map: HierarchicalTopicMap,
     handlers: List[IHandleEvents | IHandleCommands],
     logger: Optional[logging.Logger] = None,

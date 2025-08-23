@@ -63,6 +63,20 @@ async def step_impl2(context, serializer, broker_type):
                 message_pump=context.message_pump,
                 topic_map=context.topic_map,
             )
+        case ("cloudevent", "redis"):
+            from sirabus.publisher.cloudevent_router import create_redis_router
+
+            context.router = create_redis_router(
+                redis_url=context.connection_string,
+                topic_map=context.topic_map,
+            )
+        case ("pydantic", "redis"):
+            from sirabus.publisher.pydantic_router import create_redis_router
+
+            context.router = create_redis_router(
+                redis_url=context.connection_string,
+                topic_map=context.topic_map,
+            )
         case _:
             raise ValueError(f"Unknown broker type: {serializer} {broker_type}")
     await asyncio.sleep(0.1)

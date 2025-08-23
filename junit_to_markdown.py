@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 import re
 
 REPORTS_DIR = os.path.join(os.path.dirname(__file__), "reports")
-OUTPUT_MD = os.path.join(os.path.dirname(__file__), "testreports.md")
+OUTPUT_MD = os.path.join(os.path.dirname(__file__), "test_report.md")
 
 
 def extract_scenarios_from_junit(xml_path):

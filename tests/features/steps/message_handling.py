@@ -86,10 +86,7 @@ def set_up_sqs_broker(context):
 
 
 def set_up_redis(context):
-    container = (
-        RedisContainer()
-        .start()
-    )
+    container = RedisContainer().start()
     context.connection_string = f"redis://{container.get_container_host_ip()}:{container.get_exposed_port(6379)}"
     context.containers.append(container)
 
@@ -202,6 +199,7 @@ def configure_cloudevent_inmemory_service_bus(context):
 
 def configure_cloudevent_redis_service_bus(context):
     from sirabus.servicebus.cloudevent_servicebus import create_servicebus_for_redis
+
     bus = create_servicebus_for_redis(
         redis_url=context.connection_string,
         topic_map=context.topic_map,
@@ -212,6 +210,7 @@ def configure_cloudevent_redis_service_bus(context):
 
 def configure_pydantic_redis_service_bus(context):
     from sirabus.servicebus.pydantic_servicebus import create_servicebus_for_redis
+
     bus = create_servicebus_for_redis(
         redis_url=context.connection_string,
         topic_map=context.topic_map,

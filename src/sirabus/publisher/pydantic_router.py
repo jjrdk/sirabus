@@ -4,7 +4,6 @@ from typing import Optional
 from sirabus import IRouteCommands, SqsConfig
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 from sirabus.message_pump import MessagePump
-from sirabus.publisher.amqp_command_router import AmqpCommandRouter
 
 
 def create_amqp_router(
@@ -20,8 +19,8 @@ def create_amqp_router(
     :return: An AmqpCommandRouter instance.
     """
     from sirabus.publisher.pydantic_serialization import create_command
-
     from sirabus.publisher.pydantic_serialization import read_command_response
+    from sirabus.publisher.amqp_command_router import AmqpCommandRouter
 
     return AmqpCommandRouter(
         amqp_url=amqp_url,
@@ -50,6 +49,33 @@ def create_sqs_router(
 
     return SqsCommandRouter(
         config=config,
+        topic_map=topic_map,
+        logger=logger,
+        message_writer=create_command,
+        response_reader=read_command_response,
+    )
+
+
+def create_redis_router(
+    redis_url: str,
+    topic_map: HierarchicalTopicMap,
+    logger: Optional[logging.Logger] = None,
+) -> IRouteCommands:
+    """
+    Creates a CloudEventCommandRouter for SQS.
+    :param redis_url: The Redis URL for Pub/Sub.
+    :param topic_map: The hierarchical topic map.
+    :param logger: Optional logger.
+    :return: An RedisCommandRouter instance.
+    :raises ValueError: If the config is None or if the topic_map is None.
+    :raises TypeError: If message_writer or response_reader are not callable.
+    """
+    from sirabus.publisher.pydantic_serialization import create_command
+    from sirabus.publisher.redis_command_router import RedisCommandRouter
+    from sirabus.publisher.pydantic_serialization import read_command_response
+
+    return RedisCommandRouter(
+        redis_url=redis_url,
         topic_map=topic_map,
         logger=logger,
         message_writer=create_command,

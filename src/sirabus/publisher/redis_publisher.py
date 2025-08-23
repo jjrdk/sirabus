@@ -15,11 +15,11 @@ class RedisPublisher(IPublishEvents):
     """
 
     def __init__(
-            self,
-            redis_url: str,
-            topic_map: HierarchicalTopicMap,
-            event_writer: Callable[[BaseEvent, HierarchicalTopicMap], Tuple[str, str, str]],
-            logger: logging.Logger | None = None,
+        self,
+        redis_url: str,
+        topic_map: HierarchicalTopicMap,
+        event_writer: Callable[[BaseEvent, HierarchicalTopicMap], Tuple[str, str, str]],
+        logger: logging.Logger | None = None,
     ) -> None:
         """
         Initializes the SqsPublisher.
@@ -45,7 +45,12 @@ class RedisPublisher(IPublishEvents):
 
         _, hierarchical_topic, j = self._event_writer(event, self.__topic_map)
         from redis.asyncio import Redis
-        async with Redis.from_url(self.__redis_url) as redis:
-            msg = {'message_id': str(uuid.uuid4()), 'body': j, 'correlation_id': str(event.correlation_id)}
+
+        async with Redis.from_url(url=self.__redis_url) as redis:
+            msg = {
+                "message_id": str(uuid.uuid4()),
+                "body": j,
+                "correlation_id": str(event.correlation_id),
+            }
             await redis.publish(hierarchical_topic, json.dumps(msg))
             self.__logger.debug(f"Published {hierarchical_topic}")

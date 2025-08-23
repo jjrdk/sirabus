@@ -41,15 +41,15 @@ class RedisServiceBus(ServiceBus):
     """
 
     def __init__(
-            self,
-            redis_url: str,
-            topic_map: HierarchicalTopicMap,
-            handlers: List[IHandleEvents | IHandleCommands],
-            message_reader: Callable[
-                [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent]
-            ],
-            command_response_writer: Callable[[CommandResponse], Tuple[str, bytes]],
-            logger: Optional[logging.Logger] = None,
+        self,
+        redis_url: str,
+        topic_map: HierarchicalTopicMap,
+        handlers: List[IHandleEvents | IHandleCommands],
+        message_reader: Callable[
+            [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent]
+        ],
+        command_response_writer: Callable[[CommandResponse], Tuple[str, bytes]],
+        logger: Optional[logging.Logger] = None,
     ) -> None:
         """
         Create a new instance of the SQS service bus consumer class.
@@ -68,7 +68,8 @@ class RedisServiceBus(ServiceBus):
             logger=logger or logging.getLogger("RedisServiceBus"),
         )
         from redis.asyncio import Redis
-        self.__redis_client = Redis.from_url(redis_url)
+
+        self.__redis_client = Redis.from_url(url=redis_url)
         self.__redis_pubsub = self.__redis_client.pubsub()
         self.__command_response_writer = command_response_writer
         self._topic_map = topic_map
@@ -91,10 +92,12 @@ class RedisServiceBus(ServiceBus):
         relationships = self._topic_map.build_parent_child_relationships()
         topic_hierarchy = set(self._get_topic_hierarchy(self.__topics, relationships))
         await self.__redis_pubsub.subscribe(*topic_hierarchy)
-        self.__read_task = asyncio.create_task(self._consume_messages(),)
+        self.__read_task = asyncio.create_task(
+            self._consume_messages(),
+        )
 
     def _get_topic_hierarchy(
-            self, topics: Set[str], relationships: Dict[str, Set[str]]
+        self, topics: Set[str], relationships: Dict[str, Set[str]]
     ) -> Iterable[str]:
         """
         Returns the hierarchy of topics for the given set of topics.
@@ -106,7 +109,7 @@ class RedisServiceBus(ServiceBus):
             yield from self._get_child_hierarchy(topic, relationships)
 
     def _get_child_hierarchy(
-            self, topic: str, relationships: Dict[str, Set[str]]
+        self, topic: str, relationships: Dict[str, Set[str]]
     ) -> Iterable[str]:
         children = relationships.get(topic, set())
         if any(children):
@@ -119,29 +122,44 @@ class RedisServiceBus(ServiceBus):
         """
         while not self._stopped:
             try:
-                message = await self.__redis_pubsub.get_message(ignore_subscribe_messages=True)
+                message = await self.__redis_pubsub.get_message(
+                    ignore_subscribe_messages=True
+                )
                 if message is not None:
-                    data = json.loads(message['data'])
-                    await self.handle_message(headers={'topic': message['channel'].decode()},
-                                              body=data.get('body', b''),
-                                              message_id=data.get('message_id', None),
-                                              correlation_id=data.get('correlation_id', None),
-                                              reply_to=data.get('reply_to', None))
+                    data = json.loads(message["data"])
+                    await self.handle_message(
+                        headers={"topic": message["channel"].decode()},
+                        body=data.get("body", b""),
+                        message_id=data.get("message_id", None),
+                        correlation_id=data.get("correlation_id", None),
+                        reply_to=data.get("reply_to", None),
+                    )
             except Exception as e:
                 self._logger.error(f"Failed to consume message", exc_info=e)
 
     async def stop(self):
         self._stopped = True
+        if self.__read_task:
+            self.__read_task.cancel()
+            try:
+                await self.__read_task
+            except asyncio.CancelledError:
+                pass
 
     async def send_command_response(
-            self,
-            response: CommandResponse,
-            message_id: str | None,
-            correlation_id: str | None,
-            reply_to: str,
+        self,
+        response: CommandResponse,
+        message_id: str | None,
+        correlation_id: str | None,
+        reply_to: str,
     ):
         self._logger.debug(
             f"Response published to {reply_to} with correlation_id {correlation_id}."
         )
-        topic, body = self.__command_response_writer(response)
-        self.__redis_client.publish(reply_to, body)
+        _, body = self.__command_response_writer(response)
+        msg = {
+            "message_id": message_id,
+            "correlation_id": correlation_id,
+            "body": body.decode(),
+        }
+        await self.__redis_client.publish(channel=reply_to, message=json.dumps(msg))
