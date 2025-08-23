@@ -132,19 +132,19 @@ def create_servicebus_for_redis(
     logger: Optional[logging.Logger] = None,
 ) -> ServiceBus:
     """
-    Create a ServiceBus instance for SQS using CloudEvents serialization.
+    Create a ServiceBus instance for Redis using CloudEvents serialization.
     :param redis_url: The Redis URL for the service bus.
     :param topic_map: The hierarchical topic map for topic resolution.
     :param handlers: A list of event and command handlers.
     :param logger: Optional logger for logging.
-    :return: An instance of SqsServiceBus.
+    :return: An instance of RedisServiceBus.
     :raises ValueError: If the topic map is not provided.
     :raises TypeError: If the handlers are not instances of IHandleEvents or IHandleCommands.
     :raises Exception: If there is an error during service bus creation.
     :note: This function uses CloudEvents serialization for message handling.
-    :note: The `run` method starts the service bus and begins consuming messages from SQS.
+    :note: The `run` method starts the service bus and begins consuming messages from Redis.
            The `stop` method should be called to gracefully shut down the service bus and close
-           the connection to SQS.
+           the connection to Redis.
     """
     from sirabus.publisher.cloudevent_serialization import (
         write_cloudevent_message,
@@ -159,7 +159,7 @@ def create_servicebus_for_redis(
         handlers=handlers,
         message_reader=write_cloudevent_message,
         command_response_writer=create_command_response,
-        logger=logger or logging.getLogger("SqsServiceBus"),
+        logger=logger or logging.getLogger("RedisServiceBus"),
     )
 
 

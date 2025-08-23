@@ -62,7 +62,7 @@ def create_redis_router(
     logger: Optional[logging.Logger] = None,
 ) -> IRouteCommands:
     """
-    Creates a CloudEventCommandRouter for SQS.
+    Creates a CloudEventCommandRouter for Redis.
     :param redis_url: The Redis URL for Pub/Sub.
     :param topic_map: The hierarchical topic map.
     :param logger: Optional logger.

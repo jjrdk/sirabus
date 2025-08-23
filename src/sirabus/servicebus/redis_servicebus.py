@@ -12,19 +12,17 @@ from sirabus.servicebus import ServiceBus
 
 class RedisServiceBus(ServiceBus):
     """
-    A service bus implementation that uses AWS SQS and SNS for message handling.
-    This class allows for the consumption of messages from SQS queues and the publishing of command responses.
+    A service bus implementation that uses Redis for message handling.
+    This class allows for the consumption of messages from Redis PubSuband the publishing of command responses.
     It supports hierarchical topic mapping and can handle both events and commands.
-    It is designed to work with AWS credentials and SQS queue configurations provided in the SqsConfig object.
-    It also allows for prefetching messages from the SQS queue to improve performance.
     This class is thread-safe and can be used in a multi-threaded environment.
     It is designed to be used with the Sirabus framework for building event-driven applications.
     It provides methods for running the service bus, stopping it, and sending command responses.
     :param str redis_url: The URL of the Redis instance to use.
     :param HierarchicalTopicMap topic_map: The topic map to use for resolving topics.
     :param List[IHandleEvents | IHandleCommands] handlers: The list of event and command handlers to register.
-    :param Callable message_reader: Function to deserialize messages from SQS.
-    :param Callable command_response_writer: Function to serialize command responses for SQS.
+    :param Callable message_reader: Function to deserialize messages from Redis.
+    :param Callable command_response_writer: Function to serialize command responses for Redis.
     :param Optional[logging.Logger] logger: Logger instance to use for logging.
     :raises ValueError: If the message reader cannot determine the topic for the event or command.
     :raises TypeError: If the event or command is not a subclass of BaseEvent or BaseCommand.
@@ -36,8 +34,6 @@ class RedisServiceBus(ServiceBus):
     It provides methods for running the service bus, stopping it, and sending command responses.
     It is thread-safe and can be used in a multi-threaded environment.
     It supports hierarchical topic mapping and can handle both events and commands.
-    It is designed to work with AWS credentials and SQS queue configurations provided in the SqsConfig object.
-    It also allows for prefetching messages from the SQS queue to improve performance.
     """
 
     def __init__(
@@ -52,13 +48,13 @@ class RedisServiceBus(ServiceBus):
         logger: Optional[logging.Logger] = None,
     ) -> None:
         """
-        Create a new instance of the SQS service bus consumer class.
+        Create a new instance of the Redis service bus consumer class.
 
         :param redis_url: The URL of the Redis instance to use.
         :param HierarchicalTopicMap topic_map: The topic map to use for resolving topics.
         :param List[IHandleEvents | IHandleCommands] handlers: The list of event and command handlers to register.
-        :param Callable message_reader: Function to deserialize messages from SQS.
-        :param Callable command_response_writer: Function to serialize command responses for SQS.
+        :param Callable message_reader: Function to deserialize messages from Redis.
+        :param Callable command_response_writer: Function to serialize command responses for Redis.
         :param Optional[logging.Logger] logger: Logger instance to use for logging.
         """
         super().__init__(
