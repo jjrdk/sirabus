@@ -9,7 +9,7 @@ from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 
 def create_event[TEvent: BaseEvent](
     event: TEvent, topic_map: HierarchicalTopicMap
-) -> Tuple[str, str, str]:
+) -> Tuple[str, str]:
     """
     Create an event message for publishing.
     :param event: The event to publish.
@@ -25,7 +25,7 @@ def create_event[TEvent: BaseEvent](
             f"Topic for event type {event_type} not found in hierarchical_topic map."
         )
     j = event.model_dump_json()
-    return topic, hierarchical_topic, j
+    return hierarchical_topic, j
 
 
 def read_event_message(

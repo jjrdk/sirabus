@@ -18,7 +18,7 @@ class RedisPublisher(IPublishEvents):
         self,
         redis_url: str,
         topic_map: HierarchicalTopicMap,
-        event_writer: Callable[[BaseEvent, HierarchicalTopicMap], Tuple[str, str, str]],
+        event_writer: Callable[[BaseEvent, HierarchicalTopicMap], Tuple[str, str]],
         logger: logging.Logger | None = None,
     ) -> None:
         """
@@ -43,7 +43,7 @@ class RedisPublisher(IPublishEvents):
         :param event: The event to publish.
         """
 
-        _, hierarchical_topic, j = self._event_writer(event, self.__topic_map)
+        hierarchical_topic, j = self._event_writer(event, self.__topic_map)
         from redis.asyncio import Redis
 
         async with Redis.from_url(url=self.__redis_url) as redis:
