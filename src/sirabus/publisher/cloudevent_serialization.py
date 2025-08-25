@@ -23,7 +23,7 @@ class CloudEventAttributes(BaseModel):
     )
 
 
-def write_cloudevent_message(
+def read_cloudevent_message(
     topic_map: HierarchicalTopicMap, properties: dict, body: bytes
 ) -> Tuple[dict, BaseEvent]:
     """
