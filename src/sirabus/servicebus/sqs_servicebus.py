@@ -2,10 +2,89 @@ import asyncio
 import json
 import time
 from threading import Thread
-from typing import Dict, Optional, Set, Iterable
+from typing import Callable, Dict, Optional, Set, Tuple, Iterable
 
-from sirabus import IHandleEvents, IHandleCommands, CommandResponse, get_type_param
-from sirabus.servicebus import ServiceBus, SqsServiceBusConfiguration
+from aett.eventstore import BaseEvent, BaseCommand
+
+from sirabus import (
+    IHandleEvents,
+    IHandleCommands,
+    CommandResponse,
+    get_type_param,
+    SqsConfig,
+)
+from sirabus.hierarchical_topicmap import HierarchicalTopicMap
+from sirabus.servicebus import ServiceBus, ServiceBusConfiguration
+
+
+class SqsServiceBusConfiguration(ServiceBusConfiguration):
+    def __init__(
+        self,
+        message_reader: Callable[
+            [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent | BaseCommand]
+        ],
+        command_response_writer: Callable[[CommandResponse], Tuple[str, bytes]],
+    ):
+        super().__init__(
+            message_reader=message_reader,
+            command_response_writer=command_response_writer,
+        )
+        self._sqs_config: Optional[SqsConfig] = None
+        self._prefetch_count: int = 10
+        import uuid
+
+        self._receive_endpoint_name: str = "sqs_" + str(uuid.uuid4())
+
+    def get_prefetch_count(self) -> int:
+        return self._prefetch_count
+
+    def get_receive_endpoint_name(self) -> str:
+        return self._receive_endpoint_name
+
+    def get_sqs_config(self) -> SqsConfig:
+        if not self._sqs_config:
+            raise ValueError("SQS config is not set.")
+        return self._sqs_config
+
+    def with_prefetch_count(self, prefetch_count: int):
+        if prefetch_count < 1:
+            raise ValueError("prefetch_count must be >= 1")
+        self._prefetch_count = prefetch_count
+        return self
+
+    def with_receive_endpoint_name(self, receive_endpoint_name: str):
+        if not receive_endpoint_name or receive_endpoint_name == "":
+            raise ValueError("receive_endpoint_name must not be empty")
+        self._receive_endpoint_name = receive_endpoint_name
+        return self
+
+    def with_sqs_config(self, sqs_config: SqsConfig):
+        self._sqs_config = sqs_config
+        return self
+
+    @staticmethod
+    def default():
+        from sirabus.publisher.pydantic_serialization import (
+            read_event_message,
+            create_command_response,
+        )
+
+        return SqsServiceBusConfiguration(
+            message_reader=read_event_message,
+            command_response_writer=create_command_response,
+        )
+
+    @staticmethod
+    def for_cloud_event():
+        from sirabus.publisher.cloudevent_serialization import (
+            read_cloudevent_message,
+            create_command_response,
+        )
+
+        return SqsServiceBusConfiguration(
+            message_reader=read_cloudevent_message,
+            command_response_writer=create_command_response,
+        )
 
 
 class SqsServiceBus(ServiceBus[SqsServiceBusConfiguration]):

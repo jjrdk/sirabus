@@ -1,15 +1,70 @@
 import asyncio
 import json
-from typing import Dict, Optional, Set, Iterable
+from typing import Callable, Optional, Tuple
+from typing import Dict, Iterable, Set
 
-from sirabus import IHandleEvents, IHandleCommands, CommandResponse, get_type_param
-from sirabus.servicebus import ServiceBus, RedisServiceBusConfiguration
+from aett.eventstore import BaseEvent, BaseCommand
+
+from sirabus import CommandResponse
+from sirabus import IHandleEvents, IHandleCommands, get_type_param
+from sirabus.hierarchical_topicmap import HierarchicalTopicMap
+from sirabus.servicebus import ServiceBus, ServiceBusConfiguration
+
+
+class RedisServiceBusConfiguration(ServiceBusConfiguration):
+    def __init__(
+        self,
+        message_reader: Callable[
+            [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent | BaseCommand]
+        ],
+        command_response_writer: Callable[[CommandResponse], Tuple[str, bytes]],
+    ):
+        super().__init__(
+            message_reader=message_reader,
+            command_response_writer=command_response_writer,
+        )
+        self._redis_url: Optional[str] = None
+
+    def get_redis_url(self) -> str:
+        if not self._redis_url:
+            raise ValueError("Redis URL is not set.")
+        return self._redis_url
+
+    def with_redis_url(self, redis_url: str):
+        if not redis_url or redis_url == "":
+            raise ValueError("redis_url must not be empty")
+        self._redis_url = redis_url
+        return self
+
+    @staticmethod
+    def default():
+        from sirabus.publisher.pydantic_serialization import (
+            read_event_message,
+            create_command_response,
+        )
+
+        return RedisServiceBusConfiguration(
+            message_reader=read_event_message,
+            command_response_writer=create_command_response,
+        )
+
+    @staticmethod
+    def for_cloud_event():
+        from sirabus.publisher.cloudevent_serialization import (
+            read_cloudevent_message,
+            create_command_response,
+        )
+
+        return RedisServiceBusConfiguration(
+            message_reader=read_cloudevent_message,
+            command_response_writer=create_command_response,
+        )
 
 
 class RedisServiceBus(ServiceBus[RedisServiceBusConfiguration]):
     """
     A service bus implementation that uses Redis for message handling.
-    This class allows for the consumption of messages from Redis PubSuband the publishing of command responses.
+    This class allows for the consumption of messages from Redis PubSub and the publishing of command responses.
     It supports hierarchical topic mapping and can handle both events and commands.
     This class is thread-safe and can be used in a multi-threaded environment.
     It is designed to be used with the Sirabus framework for building event-driven applications.

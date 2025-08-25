@@ -1,8 +1,6 @@
 import abc
 import asyncio
-import logging
-import uuid
-from typing import Callable, List, Tuple, Optional
+from typing import Callable, List, Tuple
 
 from aett.eventstore import BaseEvent
 from aett.eventstore.base_command import BaseCommand
@@ -12,12 +10,12 @@ from sirabus import (
     IHandleCommands,
     CommandResponse,
     get_type_param,
-    SqsConfig,
+    EndpointConfiguration,
 )
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 
 
-class ServiceBusConfiguration(abc.ABC):
+class ServiceBusConfiguration(EndpointConfiguration, abc.ABC):
     def __init__(
         self,
         message_reader: Callable[
@@ -25,7 +23,7 @@ class ServiceBusConfiguration(abc.ABC):
         ],
         command_response_writer: Callable[[CommandResponse], Tuple[str, bytes]],
     ):
-        self._topic_map = HierarchicalTopicMap()
+        super().__init__()
         self._message_reader: Callable[
             [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent | BaseCommand]
         ] = message_reader
@@ -33,16 +31,9 @@ class ServiceBusConfiguration(abc.ABC):
             [CommandResponse], Tuple[str, bytes]
         ] = command_response_writer
         self._handlers: List[IHandleEvents | IHandleCommands] = []
-        self._logger = logging.getLogger("ServiceBus")
-
-    def get_topic_map(self) -> HierarchicalTopicMap:
-        return self._topic_map
 
     def get_handlers(self) -> List[IHandleEvents | IHandleCommands]:
         return self._handlers
-
-    def get_logger(self) -> logging.Logger:
-        return self._logger
 
     def read(self, headers: dict, body: bytes) -> Tuple[dict, BaseEvent | BaseCommand]:
         return self._message_reader(self._topic_map, headers, body)
@@ -50,158 +41,9 @@ class ServiceBusConfiguration(abc.ABC):
     def write_response(self, response: CommandResponse) -> Tuple[str, bytes]:
         return self._command_response_writer(response)
 
-    def with_topic_map(self, topic_map: HierarchicalTopicMap):
-        self._topic_map = topic_map
-        return self
-
     def with_handlers(self, *handlers: IHandleEvents | IHandleCommands):
         self._handlers.extend(handlers)
         return self
-
-    def with_logger(self, logger: logging.Logger):
-        self._logger = logger
-        return self
-
-    @abc.abstractmethod
-    def build(self): ...
-
-    @staticmethod
-    @abc.abstractmethod
-    def default(): ...
-
-    @staticmethod
-    @abc.abstractmethod
-    def for_cloud_event(): ...
-
-
-class RedisServiceBusConfiguration(ServiceBusConfiguration):
-    def __init__(
-        self,
-        message_reader: Callable[
-            [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent | BaseCommand]
-        ],
-        command_response_writer: Callable[[CommandResponse], Tuple[str, bytes]],
-    ):
-        super().__init__(
-            message_reader=message_reader,
-            command_response_writer=command_response_writer,
-        )
-        self._redis_url: Optional[str] = None
-
-    def get_redis_url(self) -> str:
-        if not self._redis_url:
-            raise ValueError("Redis URL is not set.")
-        return self._redis_url
-
-    def with_redis_url(self, redis_url: str):
-        if not redis_url or redis_url == "":
-            raise ValueError("redis_url must not be empty")
-        self._redis_url = redis_url
-        return self
-
-    def build(self):
-        if not self._redis_url:
-            raise ValueError("Redis URL must be set before building the service bus.")
-        from sirabus.servicebus.redis_servicebus import RedisServiceBus
-
-        return RedisServiceBus(configuration=self)
-
-    @staticmethod
-    def default():
-        from sirabus.publisher.pydantic_serialization import (
-            read_event_message,
-            create_command_response,
-        )
-
-        return RedisServiceBusConfiguration(
-            message_reader=read_event_message,
-            command_response_writer=create_command_response,
-        )
-
-    @staticmethod
-    def for_cloud_event():
-        from sirabus.publisher.cloudevent_serialization import (
-            read_cloudevent_message,
-            create_command_response,
-        )
-
-        return RedisServiceBusConfiguration(
-            message_reader=read_cloudevent_message,
-            command_response_writer=create_command_response,
-        )
-
-
-class SqsServiceBusConfiguration(ServiceBusConfiguration):
-    def __init__(
-        self,
-        message_reader: Callable[
-            [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent | BaseCommand]
-        ],
-        command_response_writer: Callable[[CommandResponse], Tuple[str, bytes]],
-    ):
-        super().__init__(
-            message_reader=message_reader,
-            command_response_writer=command_response_writer,
-        )
-        self._sqs_config: Optional[SqsConfig] = None
-        self._prefetch_count: int = 10
-        self._receive_endpoint_name: str = "sqs_" + str(uuid.uuid4())
-
-    def get_prefetch_count(self) -> int:
-        return self._prefetch_count
-
-    def get_receive_endpoint_name(self) -> str:
-        return self._receive_endpoint_name
-
-    def get_sqs_config(self) -> Optional[SqsConfig]:
-        return self._sqs_config
-
-    def with_prefetch_count(self, prefetch_count: int):
-        if prefetch_count < 1:
-            raise ValueError("prefetch_count must be >= 1")
-        self._prefetch_count = prefetch_count
-        return self
-
-    def with_receive_endpoint_name(self, receive_endpoint_name: str):
-        if not receive_endpoint_name or receive_endpoint_name == "":
-            raise ValueError("receive_endpoint_name must not be empty")
-        self._receive_endpoint_name = receive_endpoint_name
-        return self
-
-    def with_sqs_config(self, sqs_config: SqsConfig):
-        self._sqs_config = sqs_config
-        return self
-
-    def build(self):
-        if not self._sqs_config:
-            raise ValueError("SQS config must be set before building the service bus.")
-        from sirabus.servicebus.sqs_servicebus import SqsServiceBus
-
-        return SqsServiceBus(configuration=self)
-
-    @staticmethod
-    def default():
-        from sirabus.publisher.pydantic_serialization import (
-            read_event_message,
-            create_command_response,
-        )
-
-        return SqsServiceBusConfiguration(
-            message_reader=read_event_message,
-            command_response_writer=create_command_response,
-        )
-
-    @staticmethod
-    def for_cloud_event():
-        from sirabus.publisher.cloudevent_serialization import (
-            read_cloudevent_message,
-            create_command_response,
-        )
-
-        return SqsServiceBusConfiguration(
-            message_reader=read_cloudevent_message,
-            command_response_writer=create_command_response,
-        )
 
 
 class ServiceBus[TConfiguration: ServiceBusConfiguration](abc.ABC):

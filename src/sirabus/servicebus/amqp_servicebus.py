@@ -1,4 +1,4 @@
-from typing import Optional, Callable, Tuple
+from typing import Callable, Optional, Tuple
 
 import aio_pika
 from aett.eventstore import BaseEvent, BaseCommand
@@ -9,8 +9,8 @@ from aio_pika.abc import (
 )
 
 from sirabus import IHandleEvents, IHandleCommands, CommandResponse, get_type_param
+from sirabus.servicebus import ServiceBusConfiguration, ServiceBus
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
-from sirabus.servicebus import ServiceBus, ServiceBusConfiguration
 
 
 class AmqpServiceBusConfiguration(ServiceBusConfiguration):
@@ -55,11 +55,6 @@ class AmqpServiceBusConfiguration(ServiceBusConfiguration):
             raise ValueError("receive_endpoint_name must not be empty")
         self._receive_endpoint_name = receive_endpoint_name
         return self
-
-    def build(self):
-        if not self.get_amqp_url:
-            raise ValueError("AMQP URL must be set before building the service bus.")
-        return AmqpServiceBus(configuration=self)
 
     @staticmethod
     def default():
