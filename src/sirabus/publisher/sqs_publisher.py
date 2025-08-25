@@ -17,7 +17,7 @@ class SqsPublisher(IPublishEvents):
         self,
         sqs_config: SqsConfig,
         topic_map: HierarchicalTopicMap,
-        event_writer: Callable[[BaseEvent, HierarchicalTopicMap], Tuple[str, str, str]],
+        event_writer: Callable[[BaseEvent, HierarchicalTopicMap], Tuple[str, str]],
         logger: logging.Logger | None = None,
     ) -> None:
         """
@@ -42,7 +42,7 @@ class SqsPublisher(IPublishEvents):
         :param event: The event to publish.
         """
 
-        _, hierarchical_topic, j = self._event_writer(event, self.__topic_map)
+        hierarchical_topic, j = self._event_writer(event, self.__topic_map)
         sns_client = self.__sqs_config.to_sns_client()
         import json
 

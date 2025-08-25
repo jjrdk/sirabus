@@ -1,21 +1,25 @@
+import asyncio
 import datetime
 import logging
 import uuid
-import asyncio
+
 from behave import given, when, then, step, use_step_matcher
 from testcontainers.localstack import LocalStackContainer
 from testcontainers.rabbitmq import RabbitMqContainer
 from testcontainers.redis import RedisContainer
 
+from sirabus import generate_vhost_name
+from sirabus.hierarchical_topicmap import HierarchicalTopicMap
+from sirabus.message_pump import MessagePump
+from sirabus.servicebus import SqsServiceBusConfiguration, RedisServiceBusConfiguration
+from sirabus.servicebus.amqp_servicebus import AmqpServiceBusConfiguration
+from sirabus.servicebus.inmemory_servicebus import InMemoryConfiguration
+from sirabus.topography.amqp import TopographyBuilder as AmqpTopographyBuilder
+from sirabus.topography.sqs import TopographyBuilder as SqsTopographyBuilder, SqsConfig
 from tests.features.steps.command_handlers import (
     StatusCommandHandler,
     InfoCommandHandler,
 )
-from sirabus import generate_vhost_name
-from sirabus.message_pump import MessagePump
-from sirabus.topography.amqp import TopographyBuilder as AmqpTopographyBuilder
-from sirabus.topography.sqs import TopographyBuilder as SqsTopographyBuilder, SqsConfig
-from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 from tests.features.steps.test_types import (
     TestEvent,
     TestEventHandler,
@@ -130,14 +134,13 @@ async def configure_cloudevent_amqp_service_bus(context):
         amqp_url=context.connection_string, topic_map=context.topic_map
     )
     await builder.build()
-    from sirabus.servicebus.cloudevent_servicebus import (
-        create_servicebus_for_amqp_cloudevent,
-    )
 
-    bus = create_servicebus_for_amqp_cloudevent(
-        amqp_url=context.connection_string,
-        topic_map=context.topic_map,
-        handlers=context.handlers,
+    bus = (
+        AmqpServiceBusConfiguration.for_cloud_event()
+        .with_topic_map(context.topic_map)
+        .with_amqp_url(context.connection_string)
+        .with_handlers(*context.handlers)
+        .build()
     )
     context.consumer = bus
 
@@ -147,12 +150,13 @@ async def configure_pydantic_amqp_service_bus(context):
         amqp_url=context.connection_string, topic_map=context.topic_map
     )
     await builder.build()
-    from sirabus.servicebus import create_servicebus_for_amqp_pydantic
 
-    bus = create_servicebus_for_amqp_pydantic(
-        amqp_url=context.connection_string,
-        topic_map=context.topic_map,
-        event_handlers=context.handlers,
+    bus = (
+        AmqpServiceBusConfiguration.default()
+        .with_amqp_url(context.connection_string)
+        .with_topic_map(context.topic_map)
+        .with_handlers(*context.handlers)
+        .build()
     )
     context.consumer = bus
 
@@ -160,12 +164,13 @@ async def configure_pydantic_amqp_service_bus(context):
 def configure_cloudevent_sqs_service_bus(context):
     builder = SqsTopographyBuilder(context.topic_map, context.sqs_config)
     builder.build()
-    from sirabus.servicebus.cloudevent_servicebus import create_servicebus_for_sqs
 
-    bus = create_servicebus_for_sqs(
-        config=context.sqs_config,
-        topic_map=context.topic_map,
-        handlers=context.handlers,
+    bus = (
+        SqsServiceBusConfiguration.for_cloud_event()
+        .with_sqs_config(context.sqs_config)
+        .with_topic_map(context.topic_map)
+        .with_handlers(*context.handlers)
+        .build()
     )
     context.consumer = bus
 
@@ -174,12 +179,12 @@ def configure_pydantic_sqs_service_bus(context):
     builder = SqsTopographyBuilder(context.topic_map, context.sqs_config)
     builder.build()
 
-    from sirabus.servicebus.pydantic_servicebus import create_servicebus_for_sqs
-
-    bus = create_servicebus_for_sqs(
-        config=context.sqs_config,
-        topic_map=context.topic_map,
-        handlers=context.handlers,
+    bus = (
+        SqsServiceBusConfiguration.default()
+        .with_sqs_config(context.sqs_config)
+        .with_topic_map(context.topic_map)
+        .with_handlers(*context.handlers)
+        .build()
     )
     context.consumer = bus
 
@@ -187,34 +192,35 @@ def configure_pydantic_sqs_service_bus(context):
 def configure_cloudevent_inmemory_service_bus(context):
     context.message_pump = MessagePump()
     context.message_pump.start()
-    from sirabus.servicebus.cloudevent_servicebus import create_servicebus_for_inmemory
 
-    bus = create_servicebus_for_inmemory(
-        topic_map=context.topic_map,
-        handlers=context.handlers,
-        message_pump=context.message_pump,
+    bus = (
+        InMemoryConfiguration.for_cloud_event()
+        .with_topic_map(context.topic_map)
+        .with_handlers(*context.handlers)
+        .with_message_pump(context.message_pump)
+        .build()
     )
     context.consumer = bus
 
 
 def configure_cloudevent_redis_service_bus(context):
-    from sirabus.servicebus.cloudevent_servicebus import create_servicebus_for_redis
-
-    bus = create_servicebus_for_redis(
-        redis_url=context.connection_string,
-        topic_map=context.topic_map,
-        handlers=context.handlers,
+    bus = (
+        RedisServiceBusConfiguration.for_cloud_event()
+        .with_redis_url(context.connection_string)
+        .with_topic_map(context.topic_map)
+        .with_handlers(*context.handlers)
+        .build()
     )
     context.consumer = bus
 
 
 def configure_pydantic_redis_service_bus(context):
-    from sirabus.servicebus.pydantic_servicebus import create_servicebus_for_redis
-
-    bus = create_servicebus_for_redis(
-        redis_url=context.connection_string,
-        topic_map=context.topic_map,
-        handlers=context.handlers,
+    bus = (
+        RedisServiceBusConfiguration.default()
+        .with_redis_url(context.connection_string)
+        .with_topic_map(context.topic_map)
+        .with_handlers(*context.handlers)
+        .build()
     )
     context.consumer = bus
 
@@ -222,12 +228,13 @@ def configure_pydantic_redis_service_bus(context):
 def configure_pydantic_inmemory_service_bus(context):
     context.message_pump = MessagePump()
     context.message_pump.start()
-    from sirabus.servicebus.pydantic_servicebus import create_servicebus_for_inmemory
 
-    bus = create_servicebus_for_inmemory(
-        topic_map=context.topic_map,
-        handlers=context.handlers,
-        message_pump=context.message_pump,
+    bus = (
+        InMemoryConfiguration.default()
+        .with_topic_map(context.topic_map)
+        .with_handlers(*context.handlers)
+        .with_message_pump(context.message_pump)
+        .build()
     )
     context.consumer = bus
 

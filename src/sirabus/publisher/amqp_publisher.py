@@ -17,7 +17,7 @@ class AmqpPublisher(IPublishEvents):
         self,
         amqp_url: str,
         topic_map: HierarchicalTopicMap,
-        event_writer: Callable[[BaseEvent, HierarchicalTopicMap], Tuple[str, str, str]],
+        event_writer: Callable[[BaseEvent, HierarchicalTopicMap], Tuple[str, str]],
         logger: logging.Logger | None = None,
     ) -> None:
         self._event_writer = event_writer
@@ -31,7 +31,7 @@ class AmqpPublisher(IPublishEvents):
         :param event: The event to publish.
         """
 
-        _, hierarchical_topic, j = self._event_writer(event, self.__topic_map)
+        hierarchical_topic, j = self._event_writer(event, self.__topic_map)
 
         connection = await connect_robust(url=self.__amqp_url)
         channel = await connection.channel()
