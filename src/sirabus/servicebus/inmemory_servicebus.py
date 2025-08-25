@@ -33,11 +33,6 @@ class InMemoryConfiguration(ServiceBusConfiguration):
         self._message_pump = message_pump
         return self
 
-    def build(self):
-        if not self._message_pump:
-            raise ValueError("Message pump is not set.")
-        return InMemoryServiceBus(configuration=self)
-
     @staticmethod
     def default():
         from sirabus.publisher.pydantic_serialization import (

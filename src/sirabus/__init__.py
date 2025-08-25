@@ -1,33 +1,19 @@
 import asyncio
+import logging
 from abc import ABC, abstractmethod
 
-from aett.eventstore import Topic, BaseCommand, BaseEvent
-from pydantic import BaseModel, Field
+from aett.eventstore import BaseCommand, BaseEvent
 
-
-@Topic("command_response")
-class CommandResponse(BaseModel):
-    """
-    Represents a response to a command.
-    This class can be extended to provide specific response types.
-    """
-
-    success: bool = Field(
-        default=True, description="Indicates if the command was successful"
-    )
-    message: str = Field(
-        default="",
-        description="A message providing additional information about the command response",
-    )
-
-    def __repr__(self) -> str:
-        return f"CommandResponse(success={self.success}, message='{self.message}')"
+from sirabus.command_response import CommandResponse
+from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 
 
 class IRouteCommands(ABC):
     """
     Interface for routing commands. The command router expects to receive replies to commands
     """
+
+    from sirabus.command_response import CommandResponse
 
     @abstractmethod
     async def route[TCommand: BaseCommand](
@@ -90,20 +76,6 @@ class IHandleEvents[TEvent: BaseEvent](ABC):
         :return: None
         """
         raise NotImplementedError("This method should be overridden by subclasses.")
-
-
-def generate_vhost_name(name: str, version: str) -> str:
-    """
-    Generates a virtual host name based on the application name and version.
-    :param name: The name of the application.
-    :param version: The version of the application.
-    :return: A string representing the virtual host name.
-    """
-    import hashlib
-
-    h = hashlib.sha256(usedforsecurity=False)
-    h.update(f"{name}_{version}".encode())
-    return h.hexdigest()
 
 
 def get_type_param(instance: IHandleCommands | IHandleEvents) -> type:
@@ -210,3 +182,31 @@ class SqsConfig:
             endpoint_url=self._endpoint_url,
             verify=self._use_tls,
         )
+
+
+class EndpointConfiguration(ABC):
+    def __init__(self):
+        self._topic_map = HierarchicalTopicMap()
+        self._logger = logging.getLogger("ServiceBus")
+
+    def get_topic_map(self) -> HierarchicalTopicMap:
+        return self._topic_map
+
+    def get_logger(self) -> logging.Logger:
+        return self._logger
+
+    def with_topic_map(self, topic_map: HierarchicalTopicMap):
+        self._topic_map = topic_map
+        return self
+
+    def with_logger(self, logger: logging.Logger):
+        self._logger = logger
+        return self
+
+    @staticmethod
+    @abstractmethod
+    def default(): ...
+
+    @staticmethod
+    @abstractmethod
+    def for_cloud_event(): ...
