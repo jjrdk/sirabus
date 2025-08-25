@@ -128,17 +128,6 @@ class SqsConfig:
     It allows you to specify AWS credentials, region, endpoint URL, and whether to use TLS.
     If a profile name is provided, the access key ID and secret access key are disregarded
     and the profile credentials are used instead.
-    :param aws_access_key_id: The AWS access key ID.
-    :param aws_secret_access_key: The AWS secret access key.
-    :param aws_session_token: The AWS session token (optional).
-    :param profile_name: The AWS profile name (optional).
-    :param region: The AWS region (default is "us-east-1").
-    :param endpoint_url: The endpoint URL for the SQS/SNS service (optional).
-    :param use_tls: Whether to use TLS for the connection (default is True).
-    :raises ValueError: If the profile name is provided but the access key ID or secret access key is also provided.
-    :raises TypeError: If the provided parameters are not of the expected types.
-    :raises Exception: If there is an error during client creation or configuration.
-    :return: An instance of SqsConfig that can be used to create SQS and SNS clients.
     """
 
     def __init__(
