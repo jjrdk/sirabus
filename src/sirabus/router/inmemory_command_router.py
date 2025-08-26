@@ -1,12 +1,64 @@
 import asyncio
-import logging
-from typing import List, Tuple, Callable, Optional
+from typing import List, Tuple, Callable, Optional, Self
 
 from aett.eventstore.base_command import BaseCommand
 
 from sirabus import IRouteCommands, CommandResponse
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 from sirabus.message_pump import MessagePump, MessageConsumer
+from sirabus.router import RouterConfiguration
+
+
+class InMemoryRouterConfiguration(RouterConfiguration):
+    """Configuration for In-Memory Command Router."""
+
+    def __init__(
+        self,
+        message_writer: Callable[
+            [BaseCommand, HierarchicalTopicMap], Tuple[str, str, str]
+        ],
+        response_reader: Callable[[dict, bytes], CommandResponse | None],
+    ) -> None:
+        """
+        Initializes the InMemoryRouterConfiguration with the necessary parameters.
+        :param Callable message_writer: A callable that formats the command into a message.
+        :param Callable response_reader: A callable that reads the response from the message.
+        """
+        super().__init__(message_writer=message_writer, response_reader=response_reader)
+        self._message_pump: Optional[MessagePump] = None
+
+    def get_message_pump(self) -> MessagePump:
+        if not self._message_pump:
+            raise ValueError("message_pump has not been set.")
+        return self._message_pump
+
+    def with_message_pump(self, message_pump: MessagePump) -> Self:
+        if not message_pump:
+            raise ValueError("message_pump cannot be None.")
+        self._message_pump = message_pump
+        return self
+
+    @staticmethod
+    def default():
+        from sirabus.publisher.pydantic_serialization import (
+            create_command,
+            read_command_response,
+        )
+
+        return InMemoryRouterConfiguration(
+            message_writer=create_command, response_reader=read_command_response
+        )
+
+    @staticmethod
+    def for_cloud_event():
+        from sirabus.publisher.cloudevent_serialization import (
+            create_command,
+            read_command_response,
+        )
+
+        return InMemoryRouterConfiguration(
+            message_writer=create_command, response_reader=read_command_response
+        )
 
 
 class InMemoryCommandRouter(IRouteCommands):
@@ -16,33 +68,16 @@ class InMemoryCommandRouter(IRouteCommands):
     for handling command responses and publishes commands to the message pump.
     """
 
-    def __init__(
-        self,
-        message_pump: MessagePump,
-        topic_map: HierarchicalTopicMap,
-        command_writer: Callable[
-            [BaseCommand, HierarchicalTopicMap], Tuple[str, str, str]
-        ],
-        response_reader: Callable[[dict, bytes], CommandResponse | None],
-        logger: Optional[logging.Logger] = None,
-    ) -> None:
+    def __init__(self, configuration: InMemoryRouterConfiguration) -> None:
         """
         Initializes the InMemoryCommandRouter with the necessary parameters.
-        :param message_pump: The message pump for handling messages.
-        :param topic_map: The hierarchical topic map for routing commands.
-        :param command_writer: A callable that formats the command into a message.
-        :param response_reader: A callable that reads the response from the message.
-        :param logger: Optional logger for logging debug information.
+        :param InMemoryRouterConfiguration configuration: The router configuration.
         :raises ValueError: If the message_pump is None or if the topic_map is None.
         :raises TypeError: If command_writer or response_reader are not callable.
         :raises TypeError: If command is not a subclass of BaseCommand.
         :raises ValueError: If the command cannot be serialized.
         """
-        self._response_reader = response_reader
-        self._command_writer = command_writer
-        self._message_pump = message_pump
-        self._topic_map = topic_map
-        self._logger = logger or logging.getLogger("InMemoryCommandRouter")
+        self._configuration = configuration
         self._consumers: List[MessageConsumer] = []
 
     async def route[TCommand: BaseCommand](
@@ -56,31 +91,33 @@ class InMemoryCommandRouter(IRouteCommands):
                 CommandResponse(success=False, message="unknown command")
             )
             return response_future
-        consumer = ResponseConsumer(
+        consumer = _ResponseConsumer(
             parent_cleanup=self._remove_consumer,
-            message_pump=self._message_pump,
+            message_pump=self._configuration.get_message_pump(),
             future=response_future,
-            response_reader=self._response_reader,
+            response_reader=self._configuration.read_response,
         )
-        self._message_pump.register_consumer(consumer)
+        self._configuration.get_message_pump().register_consumer(consumer)
         self._consumers.append(consumer)
-        headers["topic"] = self._topic_map.get_from_type(type(command))
+        headers["topic"] = self._configuration.get_topic_map().get_from_type(
+            type(command)
+        )
         headers["reply_to"] = consumer.id
-        self._message_pump.publish((headers, message))
+        self._configuration.get_message_pump().publish((headers, message))
         return response_future
 
     def _create_message[TCommand: BaseCommand](
         self,
         command: TCommand,  # type: ignore
     ) -> Tuple[dict, bytes]:
-        _, __, j = self._command_writer(command, self._topic_map)
+        _, __, j = self._configuration.write_message(command)
         return {}, j.encode()
 
     def _remove_consumer(self, consumer: MessageConsumer) -> None:
         self._consumers.remove(consumer)
 
 
-class ResponseConsumer(MessageConsumer):
+class _ResponseConsumer(MessageConsumer):
     """ResponseConsumer for handling command responses. This class extends MessageConsumer to handle incoming messages
     that are responses to commands. It reads the response and sets the result on the associated future.
     """

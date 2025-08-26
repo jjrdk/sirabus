@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from abc import ABC, abstractmethod
+from typing import Self
 
 from aett.eventstore import BaseCommand, BaseEvent
 
@@ -195,11 +196,11 @@ class EndpointConfiguration(ABC):
     def get_logger(self) -> logging.Logger:
         return self._logger
 
-    def with_topic_map(self, topic_map: HierarchicalTopicMap):
+    def with_topic_map(self, topic_map: HierarchicalTopicMap) -> Self:
         self._topic_map = topic_map
         return self
 
-    def with_logger(self, logger: logging.Logger):
+    def with_logger(self, logger: logging.Logger) -> Self:
         self._logger = logger
         return self
 

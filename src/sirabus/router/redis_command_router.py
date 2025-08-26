@@ -1,51 +1,90 @@
 import asyncio
-import logging
 from threading import Thread
-from uuid import uuid4
 from typing import Dict, Tuple, Optional, Callable
+from uuid import uuid4
 
-from redis.asyncio import Redis
 from aett.eventstore.base_command import BaseCommand
+from redis.asyncio import Redis
+
 from sirabus import CommandResponse, IRouteCommands
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
+from sirabus.router import RouterConfiguration
+
+
+class RedisRouterConfiguration(RouterConfiguration):
+    """Configuration for Redis Command Router."""
+
+    def __init__(
+        self,
+        message_writer: Callable[
+            [BaseCommand, HierarchicalTopicMap], Tuple[str, str, str]
+        ],
+        response_reader: Callable[[dict, bytes], CommandResponse | None],
+    ) -> None:
+        """
+        Initializes the RedisRouterConfiguration with the necessary parameters.
+        :param Callable message_writer: A callable that formats the command into a message.
+        :param Callable response_reader: A callable that reads the response from the message.
+        """
+        super().__init__(message_writer=message_writer, response_reader=response_reader)
+        self._redis_url: Optional[str] = None
+
+    def get_redis_url(self) -> str:
+        if not self._redis_url:
+            raise ValueError("redis_url has not been set.")
+        return self._redis_url
+
+    def with_redis_url(self, redis_url: str) -> "RedisRouterConfiguration":
+        if not redis_url:
+            raise ValueError("redis_url cannot be None or empty.")
+        self._redis_url = redis_url
+        return self
+
+    @staticmethod
+    def default():
+        from sirabus.publisher.pydantic_serialization import (
+            create_command,
+            read_command_response,
+        )
+
+        return RedisRouterConfiguration(
+            message_writer=create_command, response_reader=read_command_response
+        )
+
+    @staticmethod
+    def for_cloud_event():
+        from sirabus.publisher.cloudevent_serialization import (
+            create_command,
+            read_command_response,
+        )
+
+        return RedisRouterConfiguration(
+            message_writer=create_command, response_reader=read_command_response
+        )
 
 
 class RedisCommandRouter(IRouteCommands):
     def __init__(
         self,
-        redis_url: str,
-        topic_map: HierarchicalTopicMap,
-        message_writer: Callable[
-            [BaseCommand, HierarchicalTopicMap], Tuple[str, str, str]
-        ],
-        response_reader: Callable[[dict, bytes], CommandResponse | None],
-        logger: Optional[logging.Logger] = None,
+        configuration: RedisRouterConfiguration,
     ) -> None:
         """
         Initializes the SqsCommandRouter.
-        :param redis_url: Redis URL for Pub/Sub.
-        :param topic_map: The hierarchical topic map for topic resolution.
-        :param message_writer: A callable that writes the command to a message.
-        :param response_reader: A callable that reads the response from a message.
-        :param logger: Optional logger for logging.
+        :param RedisRouterConfiguration configuration: The configuration for the router.
         :raises ValueError: If the message writer cannot determine the topic for the command.
         :raises TypeError: If the response reader does not return a CommandResponse or None.
         :raises Exception: If there is an error during message publishing or response handling.
         :return: None
         """
-        self.__response_reader = response_reader
-        self.__message_writer = message_writer
+        self._configuration = configuration
         self.__inflight: Dict[str, Tuple[asyncio.Future[CommandResponse], Thread]] = {}
-        self.__redis_url = redis_url
-        self.__topic_map = topic_map
-        self.__logger = logger or logging.getLogger("RedisCommandRouter")
 
     async def route[TCommand: BaseCommand](
         self, command: TCommand
     ) -> asyncio.Future[CommandResponse]:
         loop = asyncio.get_running_loop()
         try:
-            _, hierarchical_topic, j = self.__message_writer(command, self.__topic_map)
+            _, hierarchical_topic, j = self._configuration.write_message(command)
         except ValueError:
             future = loop.create_future()
             future.set_result(CommandResponse(success=False, message="unknown command"))
@@ -65,16 +104,16 @@ class RedisCommandRouter(IRouteCommands):
         consume_thread.start()
         import json
 
-        async with Redis.from_url(url=self.__redis_url) as client:
+        async with Redis.from_url(url=self._configuration.get_redis_url()) as client:
             await client.publish(channel=hierarchical_topic, message=json.dumps(msg))
-        self.__logger.debug(f"Published {hierarchical_topic}")
+        self._configuration.get_logger().debug(f"Published {hierarchical_topic}")
         future = loop.create_future()
         self.__inflight[msg_id] = (future, consume_thread)
         return future
 
     async def _consume_queue(self, reply_to: str) -> None:
         response_received = False
-        async with Redis.from_url(url=self.__redis_url) as client:
+        async with Redis.from_url(url=self._configuration.get_redis_url()) as client:
             async with client.pubsub() as pubsub:
                 await pubsub.subscribe(reply_to)
                 while not response_received:
@@ -86,7 +125,7 @@ class RedisCommandRouter(IRouteCommands):
                             await asyncio.sleep(0.1)
                             continue
                     except Exception as e:
-                        self.__logger.exception(
+                        self._configuration.get_logger().exception(
                             "Error receiving messages from SQS queue", exc_info=e
                         )
                         continue
@@ -96,7 +135,7 @@ class RedisCommandRouter(IRouteCommands):
                     data = json.loads(message["data"])
                     message_id = data.get("message_id")
                     topic = message["channel"].decode()
-                    response = self.__response_reader(
+                    response = self._configuration.read_response(
                         {"topic": topic}, data.get("body", b"")
                     )
                     if not response:
@@ -109,7 +148,7 @@ class RedisCommandRouter(IRouteCommands):
                             future.set_result(response)
                             response_received = True
                     except Exception as e:
-                        self.__logger.exception(
+                        self._configuration.get_logger().exception(
                             f"Error consuming message {message_id}",
                             exc_info=e,
                         )
