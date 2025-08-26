@@ -1,33 +1,19 @@
 import asyncio
+import logging
 from abc import ABC, abstractmethod
 
-from aett.eventstore import Topic, BaseCommand, BaseEvent
-from pydantic import BaseModel, Field
+from aett.eventstore import BaseCommand, BaseEvent
 
-
-@Topic("command_response")
-class CommandResponse(BaseModel):
-    """
-    Represents a response to a command.
-    This class can be extended to provide specific response types.
-    """
-
-    success: bool = Field(
-        default=True, description="Indicates if the command was successful"
-    )
-    message: str = Field(
-        default="",
-        description="A message providing additional information about the command response",
-    )
-
-    def __repr__(self) -> str:
-        return f"CommandResponse(success={self.success}, message='{self.message}')"
+from sirabus.command_response import CommandResponse
+from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 
 
 class IRouteCommands(ABC):
     """
     Interface for routing commands. The command router expects to receive replies to commands
     """
+
+    from sirabus.command_response import CommandResponse
 
     @abstractmethod
     async def route[TCommand: BaseCommand](
@@ -92,20 +78,6 @@ class IHandleEvents[TEvent: BaseEvent](ABC):
         raise NotImplementedError("This method should be overridden by subclasses.")
 
 
-def generate_vhost_name(name: str, version: str) -> str:
-    """
-    Generates a virtual host name based on the application name and version.
-    :param name: The name of the application.
-    :param version: The version of the application.
-    :return: A string representing the virtual host name.
-    """
-    import hashlib
-
-    h = hashlib.sha256(usedforsecurity=False)
-    h.update(f"{name}_{version}".encode())
-    return h.hexdigest()
-
-
 def get_type_param(instance: IHandleCommands | IHandleEvents) -> type:
     """
     Extracts the type parameter from an instance of IHandleCommands or IHandleEvents.
@@ -128,17 +100,6 @@ class SqsConfig:
     It allows you to specify AWS credentials, region, endpoint URL, and whether to use TLS.
     If a profile name is provided, the access key ID and secret access key are disregarded
     and the profile credentials are used instead.
-    :param aws_access_key_id: The AWS access key ID.
-    :param aws_secret_access_key: The AWS secret access key.
-    :param aws_session_token: The AWS session token (optional).
-    :param profile_name: The AWS profile name (optional).
-    :param region: The AWS region (default is "us-east-1").
-    :param endpoint_url: The endpoint URL for the SQS/SNS service (optional).
-    :param use_tls: Whether to use TLS for the connection (default is True).
-    :raises ValueError: If the profile name is provided but the access key ID or secret access key is also provided.
-    :raises TypeError: If the provided parameters are not of the expected types.
-    :raises Exception: If there is an error during client creation or configuration.
-    :return: An instance of SqsConfig that can be used to create SQS and SNS clients.
     """
 
     def __init__(
@@ -221,3 +182,31 @@ class SqsConfig:
             endpoint_url=self._endpoint_url,
             verify=self._use_tls,
         )
+
+
+class EndpointConfiguration(ABC):
+    def __init__(self):
+        self._topic_map = HierarchicalTopicMap()
+        self._logger = logging.getLogger("ServiceBus")
+
+    def get_topic_map(self) -> HierarchicalTopicMap:
+        return self._topic_map
+
+    def get_logger(self) -> logging.Logger:
+        return self._logger
+
+    def with_topic_map(self, topic_map: HierarchicalTopicMap):
+        self._topic_map = topic_map
+        return self
+
+    def with_logger(self, logger: logging.Logger):
+        self._logger = logger
+        return self
+
+    @staticmethod
+    @abstractmethod
+    def default(): ...
+
+    @staticmethod
+    @abstractmethod
+    def for_cloud_event(): ...

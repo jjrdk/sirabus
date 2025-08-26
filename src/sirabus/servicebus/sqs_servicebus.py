@@ -1,19 +1,93 @@
 import asyncio
 import json
-import logging
 import time
 from threading import Thread
-from typing import Dict, List, Optional, Set, Callable, Tuple, Iterable
+from typing import Callable, Dict, Optional, Set, Tuple, Iterable
 
-from aett.eventstore import BaseEvent
+from aett.eventstore import BaseEvent, BaseCommand
 
-from sirabus import IHandleEvents, IHandleCommands, CommandResponse, get_type_param
+from sirabus import (
+    IHandleEvents,
+    IHandleCommands,
+    CommandResponse,
+    get_type_param,
+    SqsConfig,
+)
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
-from sirabus.servicebus import ServiceBus
-from sirabus.topography.sqs import SqsConfig
+from sirabus.servicebus import ServiceBus, ServiceBusConfiguration
 
 
-class SqsServiceBus(ServiceBus):
+class SqsServiceBusConfiguration(ServiceBusConfiguration):
+    def __init__(
+        self,
+        message_reader: Callable[
+            [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent | BaseCommand]
+        ],
+        command_response_writer: Callable[[CommandResponse], Tuple[str, bytes]],
+    ):
+        super().__init__(
+            message_reader=message_reader,
+            command_response_writer=command_response_writer,
+        )
+        self._sqs_config: Optional[SqsConfig] = None
+        self._prefetch_count: int = 10
+        import uuid
+
+        self._receive_endpoint_name: str = "sqs_" + str(uuid.uuid4())
+
+    def get_prefetch_count(self) -> int:
+        return self._prefetch_count
+
+    def get_receive_endpoint_name(self) -> str:
+        return self._receive_endpoint_name
+
+    def get_sqs_config(self) -> SqsConfig:
+        if not self._sqs_config:
+            raise ValueError("SQS config is not set.")
+        return self._sqs_config
+
+    def with_prefetch_count(self, prefetch_count: int):
+        if prefetch_count < 1:
+            raise ValueError("prefetch_count must be >= 1")
+        self._prefetch_count = prefetch_count
+        return self
+
+    def with_receive_endpoint_name(self, receive_endpoint_name: str):
+        if not receive_endpoint_name or receive_endpoint_name == "":
+            raise ValueError("receive_endpoint_name must not be empty")
+        self._receive_endpoint_name = receive_endpoint_name
+        return self
+
+    def with_sqs_config(self, sqs_config: SqsConfig):
+        self._sqs_config = sqs_config
+        return self
+
+    @staticmethod
+    def default():
+        from sirabus.publisher.pydantic_serialization import (
+            read_event_message,
+            create_command_response,
+        )
+
+        return SqsServiceBusConfiguration(
+            message_reader=read_event_message,
+            command_response_writer=create_command_response,
+        )
+
+    @staticmethod
+    def for_cloud_event():
+        from sirabus.publisher.cloudevent_serialization import (
+            read_cloudevent_message,
+            create_command_response,
+        )
+
+        return SqsServiceBusConfiguration(
+            message_reader=read_cloudevent_message,
+            command_response_writer=create_command_response,
+        )
+
+
+class SqsServiceBus(ServiceBus[SqsServiceBusConfiguration]):
     """
     A service bus implementation that uses AWS SQS and SNS for message handling.
     This class allows for the consumption of messages from SQS queues and the publishing of command responses.
@@ -23,85 +97,50 @@ class SqsServiceBus(ServiceBus):
     This class is thread-safe and can be used in a multi-threaded environment.
     It is designed to be used with the Sirabus framework for building event-driven applications.
     It provides methods for running the service bus, stopping it, and sending command responses.
-    :param SqsConfig config: The SQS configuration object containing AWS credentials and queue settings.
-    :param HierarchicalTopicMap topic_map: The topic map to use for resolving topics.
-    :param List[IHandleEvents | IHandleCommands] handlers: The list of event and command handlers to register.
-    :param Callable message_reader: Function to deserialize messages from SQS.
-    :param Callable command_response_writer: Function to serialize command responses for SQS.
-    :param int prefetch_count: The number of messages to prefetch from SQS.
-    :param Optional[logging.Logger] logger: Logger instance to use for logging.
-    :raises ValueError: If the message reader cannot determine the topic for the event or command.
-    :raises TypeError: If the event or command is not a subclass of BaseEvent or BaseCommand.
-    :raises Exception: If there is an error during message handling or response sending.
-    :return: None
-    :raises RuntimeError: If the service bus cannot be started or stopped.
-    :raises Exception: If there is an error during message processing or cleanup.
     :note: This class is designed to be used with the Sirabus framework for building event-driven applications.
     It provides methods for running the service bus, stopping it, and sending command responses.
-    It is thread-safe and can be used in a multi-threaded environment.
+    It is thread-safe and can be used in a multithreaded environment.
     It supports hierarchical topic mapping and can handle both events and commands.
     It is designed to work with AWS credentials and SQS queue configurations provided in the SqsConfig object.
     It also allows for prefetching messages from the SQS queue to improve performance.
     """
 
-    def __init__(
-        self,
-        config: SqsConfig,
-        topic_map: HierarchicalTopicMap,
-        handlers: List[IHandleEvents | IHandleCommands],
-        message_reader: Callable[
-            [HierarchicalTopicMap, dict, bytes], Tuple[dict, BaseEvent]
-        ],
-        command_response_writer: Callable[[CommandResponse], Tuple[str, bytes]],
-        prefetch_count: int = 10,
-        logger: Optional[logging.Logger] = None,
-    ) -> None:
+    def __init__(self, configuration: SqsServiceBusConfiguration) -> None:
         """
         Create a new instance of the SQS service bus consumer class.
 
-        :param SqsConfig config: The SQS configuration object containing AWS credentials and queue settings.
-        :param HierarchicalTopicMap topic_map: The topic map to use for resolving topics.
-        :param List[IHandleEvents | IHandleCommands] handlers: The list of event and command handlers to register.
-        :param Callable message_reader: Function to deserialize messages from SQS.
-        :param Callable command_response_writer: Function to serialize command responses for SQS.
-        :param int prefetch_count: The number of messages to prefetch from SQS.
-        :param Optional[logging.Logger] logger: Logger instance to use for logging.
+        :param SqsServiceBusConfiguration configuration: The SQS service bus configuration.
         """
-        super().__init__(
-            message_reader=message_reader,
-            topic_map=topic_map,
-            handlers=handlers,
-            logger=logger or logging.getLogger("SqsServiceBus"),
-        )
-        self.__config: SqsConfig = config
-        self.__subscriptions: Set[str] = set()
-        self.__command_response_writer = command_response_writer
-        self._topic_map = topic_map
-        self._prefetch_count = prefetch_count
-        self._logger = logger or logging.getLogger("ServiceBus")
+        super().__init__(configuration=configuration)
         self.__topics = set(
             topic
             for topic in (
-                self._topic_map.get_from_type(get_type_param(handler))
-                for handler in handlers
+                self._configuration.get_topic_map().get_from_type(
+                    get_type_param(handler)
+                )
+                for handler in self._configuration.get_handlers()
                 if isinstance(handler, (IHandleEvents, IHandleCommands))
             )
             if topic is not None
         )
+        self.__subscriptions: Set[str] = set()
         self._stopped = False
-        self.__queue_name = self._get_consumer_queue_name(self.__topics)
         self.__sqs_thread: Optional[Thread] = None
 
     async def run(self):
-        self._logger.debug("Starting service bus")
-        sns_client = self.__config.to_sns_client()
-        sqs_client = self.__config.to_sqs_client()
-        declared_queue_response = sqs_client.create_queue(QueueName=self.__queue_name)
+        self._configuration.get_logger().debug("Starting service bus")
+        sns_client = self._configuration.get_sqs_config().to_sns_client()
+        sqs_client = self._configuration.get_sqs_config().to_sqs_client()
+        declared_queue_response = sqs_client.create_queue(
+            QueueName=self._configuration.get_receive_endpoint_name()
+        )
         queue_url = declared_queue_response["QueueUrl"]
         queue_attributes = sqs_client.get_queue_attributes(
             QueueUrl=queue_url, AttributeNames=["QueueArn"]
         )
-        relationships = self._topic_map.build_parent_child_relationships()
+        relationships = (
+            self._configuration.get_topic_map().build_parent_child_relationships()
+        )
         topic_hierarchy = set(self._get_topic_hierarchy(self.__topics, relationships))
         for topic in topic_hierarchy:
             self._create_subscription(
@@ -131,14 +170,16 @@ class SqsServiceBus(ServiceBus):
         yield topic
 
     def _create_subscription(self, sns_client, topic: str, queue_url: str):
-        arn = self._topic_map.get_metadata(topic, "arn")
+        arn = self._configuration.get_topic_map().get_metadata(topic, "arn")
         subscription_response = sns_client.subscribe(
             TopicArn=arn,
             Protocol="sqs",
             Endpoint=queue_url,
         )
         self.__subscriptions.add(subscription_response["SubscriptionArn"])
-        self._logger.debug(f"Queue {self.__queue_name} bound to topic {topic}.")
+        self._configuration.get_logger().debug(
+            f"Queue {self._configuration.get_receive_endpoint_name()} bound to topic {topic}."
+        )
 
     def _consume_messages(self, queue_url: str):
         """
@@ -147,7 +188,7 @@ class SqsServiceBus(ServiceBus):
         """
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        sqs_client = self.__config.to_sqs_client()
+        sqs_client = self._configuration.get_sqs_config().to_sqs_client()
         from botocore.exceptions import EndpointConnectionError
         from urllib3.exceptions import NewConnectionError
 
@@ -155,7 +196,7 @@ class SqsServiceBus(ServiceBus):
             try:
                 response = sqs_client.receive_message(
                     QueueUrl=queue_url,
-                    MaxNumberOfMessages=self._prefetch_count,
+                    MaxNumberOfMessages=self._configuration.get_prefetch_count(),
                     WaitTimeSeconds=3,
                 )
             except (
@@ -165,7 +206,7 @@ class SqsServiceBus(ServiceBus):
             ):
                 break
             except Exception as e:
-                self._logger.exception(
+                self._configuration.get_logger().exception(
                     "Error receiving messages from SQS queue", exc_info=e
                 )
                 time.sleep(1)
@@ -201,25 +242,25 @@ class SqsServiceBus(ServiceBus):
                         QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"]
                     )
                 except Exception as e:
-                    self._logger.exception(
+                    self._configuration.get_logger().exception(
                         f"Error processing message {message['MessageId']}", exc_info=e
                     )
 
     async def stop(self):
         self._stopped = True
 
-    async def send_command_response(
+    async def _send_command_response(
         self,
         response: CommandResponse,
         message_id: str | None,
         correlation_id: str | None,
         reply_to: str,
     ):
-        self._logger.debug(
+        self._configuration.get_logger().debug(
             f"Response published to {reply_to} with correlation_id {correlation_id}."
         )
-        sqs_client = self.__config.to_sqs_client()
-        topic, body = self.__command_response_writer(response)
+        sqs_client = self._configuration.get_sqs_config().to_sqs_client()
+        topic, body = self._configuration.write_response(response)
         sqs_client.send_message(
             QueueUrl=reply_to,
             MessageBody=body.decode(),
@@ -238,18 +279,3 @@ class SqsServiceBus(ServiceBus):
                 },
             },
         )
-
-    @staticmethod
-    def _get_consumer_queue_name(topics: Set[str]) -> str:
-        """
-        Returns the queue name for the given topic.
-        :param topics: The topics for which to get the queue name.
-        :return: The queue name.
-        """
-        import hashlib
-
-        h = hashlib.sha256(usedforsecurity=False)
-        for topic in topics:
-            h.update(topic.encode())
-        hashed_topics = h.hexdigest()
-        return "sqs_" + hashed_topics

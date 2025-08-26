@@ -18,7 +18,7 @@ class InMemoryPublisher(IPublishEvents):
         self,
         topic_map: HierarchicalTopicMap,
         messagepump: MessagePump,
-        event_writer: Callable[[BaseEvent, HierarchicalTopicMap], Tuple[str, str, str]],
+        event_writer: Callable[[BaseEvent, HierarchicalTopicMap], Tuple[str, str]],
         logger: logging.Logger | None = None,
     ) -> None:
         """
@@ -40,6 +40,6 @@ class InMemoryPublisher(IPublishEvents):
         :param event: The event to publish.
         """
 
-        _, hierarchical_topic, j = self._event_writer(event, self.__topic_map)
+        hierarchical_topic, j = self._event_writer(event, self.__topic_map)
         self.__messagepump.publish(({"topic": hierarchical_topic}, j.encode()))
         await asyncio.sleep(0)
