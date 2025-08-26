@@ -54,21 +54,21 @@ class AmqpRouterConfiguration(RouterConfiguration):
 
     @staticmethod
     def default():
-        from sirabus.publisher.pydantic_serialization import (
-            create_command,
+        from sirabus.serialization.pydantic_serialization import (
+            write_command,
             read_command_response,
         )
 
-        return AmqpRouterConfiguration(create_command, read_command_response)
+        return AmqpRouterConfiguration(write_command, read_command_response)
 
     @staticmethod
     def for_cloud_event():
-        from sirabus.publisher.cloudevent_serialization import (
-            create_command,
+        from sirabus.serialization.cloudevent_serialization import (
+            write_command,
             read_command_response,
         )
 
-        return AmqpRouterConfiguration(create_command, read_command_response)
+        return AmqpRouterConfiguration(write_command, read_command_response)
 
 
 class AmqpCommandRouter(IRouteCommands):

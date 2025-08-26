@@ -1,12 +1,46 @@
-import asyncio
-import logging
-from typing import Callable, Tuple
+from typing import Callable, Tuple, Self
 
 from aett.eventstore import BaseEvent
 
 from sirabus import IPublishEvents
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 from sirabus.message_pump import MessagePump
+from sirabus.publisher import PublisherConfiguration
+
+
+class InMemoryPublisherConfiguration(PublisherConfiguration):
+    def __init__(
+        self, event_writer: Callable[[BaseEvent, HierarchicalTopicMap], Tuple[str, str]]
+    ):
+        """
+        Initializes the In-Memory Publisher Configuration with the necessary parameters.
+        :param event_writer: A callable that formats the event into a message.
+        """
+        super().__init__(event_writer=event_writer)
+        self._message_pump: MessagePump | None = None
+
+    def get_message_pump(self) -> MessagePump:
+        if not self._message_pump:
+            raise ValueError("message_pump has not been set.")
+        return self._message_pump
+
+    def with_message_pump(self, message_pump: MessagePump) -> Self:
+        if not message_pump:
+            raise ValueError("message_pump cannot be None.")
+        self._message_pump = message_pump
+        return self
+
+    @staticmethod
+    def default():
+        from sirabus.serialization.pydantic_serialization import write_event
+
+        return InMemoryPublisherConfiguration(event_writer=write_event)
+
+    @staticmethod
+    def for_cloud_event():
+        from sirabus.serialization.cloudevent_serialization import write_event
+
+        return InMemoryPublisherConfiguration(event_writer=write_event)
 
 
 class InMemoryPublisher(IPublishEvents):
@@ -16,23 +50,13 @@ class InMemoryPublisher(IPublishEvents):
 
     def __init__(
         self,
-        topic_map: HierarchicalTopicMap,
-        messagepump: MessagePump,
-        event_writer: Callable[[BaseEvent, HierarchicalTopicMap], Tuple[str, str]],
-        logger: logging.Logger | None = None,
+        configuration: InMemoryPublisherConfiguration,
     ) -> None:
         """
         Initializes the InMemoryPublisher with a topic map, message pump, and event writer.
-        :param topic_map: The hierarchical topic map to use for event topics.
-        :param messagepump: The message pump to use for publishing messages.
-        :param event_writer: A callable that takes an event and topic map and returns a tuple
-                            containing the topic, hierarchical topic, and JSON representation of the event.
-        :param logger: An optional logger for logging events.
+        :param configuration: The publisher configuration.
         """
-        self._event_writer = event_writer
-        self.__topic_map = topic_map
-        self.__messagepump = messagepump
-        self.__logger = logger or logging.getLogger("InMemoryPublisher")
+        self._configuration = configuration
 
     async def publish[TEvent: BaseEvent](self, event: TEvent) -> None:
         """
@@ -40,6 +64,7 @@ class InMemoryPublisher(IPublishEvents):
         :param event: The event to publish.
         """
 
-        hierarchical_topic, j = self._event_writer(event, self.__topic_map)
-        self.__messagepump.publish(({"topic": hierarchical_topic}, j.encode()))
-        await asyncio.sleep(0)
+        hierarchical_topic, j = self._configuration.write_event(event)
+        self._configuration.get_message_pump().publish(
+            ({"topic": hierarchical_topic}, j.encode())
+        )

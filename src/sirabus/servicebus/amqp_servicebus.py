@@ -58,26 +58,26 @@ class AmqpServiceBusConfiguration(ServiceBusConfiguration):
 
     @staticmethod
     def default():
-        from sirabus.publisher.pydantic_serialization import (
-            read_event_message,
-            create_command_response,
+        from sirabus.serialization.pydantic_serialization import (
+            read_event,
+            write_command_response,
         )
 
         return AmqpServiceBusConfiguration(
-            message_reader=read_event_message,
-            command_response_writer=create_command_response,
+            message_reader=read_event,
+            command_response_writer=write_command_response,
         )
 
     @staticmethod
     def for_cloud_event():
-        from sirabus.publisher.cloudevent_serialization import (
-            read_cloudevent_message,
-            create_command_response,
+        from sirabus.serialization.cloudevent_serialization import (
+            read_event,
+            write_command_response,
         )
 
         return AmqpServiceBusConfiguration(
-            message_reader=read_cloudevent_message,
-            command_response_writer=create_command_response,
+            message_reader=read_event,
+            command_response_writer=write_command_response,
         )
 
 
