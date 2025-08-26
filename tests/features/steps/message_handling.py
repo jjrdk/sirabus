@@ -10,19 +10,6 @@ from testcontainers.redis import RedisContainer
 
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 from sirabus.message_pump import MessagePump
-from sirabus.servicebus.sqs_servicebus import SqsServiceBusConfiguration, SqsServiceBus
-from sirabus.servicebus.redis_servicebus import (
-    RedisServiceBusConfiguration,
-    RedisServiceBus,
-)
-from sirabus.servicebus.amqp_servicebus import (
-    AmqpServiceBusConfiguration,
-    AmqpServiceBus,
-)
-from sirabus.servicebus.inmemory_servicebus import (
-    InMemoryConfiguration,
-    InMemoryServiceBus,
-)
 from sirabus.topography.amqp import TopographyBuilder as AmqpTopographyBuilder
 from sirabus.topography.sqs import TopographyBuilder as SqsTopographyBuilder, SqsConfig
 from tests.features.steps.command_handlers import (
@@ -158,6 +145,11 @@ async def configure_cloudevent_amqp_service_bus(context):
     )
     await builder.build()
 
+    from sirabus.servicebus.amqp_servicebus import (
+        AmqpServiceBusConfiguration,
+        AmqpServiceBus,
+    )
+
     config = (
         AmqpServiceBusConfiguration.for_cloud_event()
         .with_topic_map(context.topic_map)
@@ -173,6 +165,11 @@ async def configure_pydantic_amqp_service_bus(context):
     )
     await builder.build()
 
+    from sirabus.servicebus.amqp_servicebus import (
+        AmqpServiceBusConfiguration,
+        AmqpServiceBus,
+    )
+
     config = (
         AmqpServiceBusConfiguration.default()
         .with_amqp_url(context.connection_string)
@@ -185,6 +182,11 @@ async def configure_pydantic_amqp_service_bus(context):
 def configure_cloudevent_sqs_service_bus(context):
     builder = SqsTopographyBuilder(context.topic_map, context.sqs_config)
     builder.build()
+
+    from sirabus.servicebus.sqs_servicebus import (
+        SqsServiceBusConfiguration,
+        SqsServiceBus,
+    )
 
     config = (
         SqsServiceBusConfiguration.for_cloud_event()
@@ -199,6 +201,11 @@ def configure_pydantic_sqs_service_bus(context):
     builder = SqsTopographyBuilder(context.topic_map, context.sqs_config)
     builder.build()
 
+    from sirabus.servicebus.sqs_servicebus import (
+        SqsServiceBusConfiguration,
+        SqsServiceBus,
+    )
+
     config = (
         SqsServiceBusConfiguration.default()
         .with_sqs_config(context.sqs_config)
@@ -212,6 +219,11 @@ def configure_cloudevent_inmemory_service_bus(context):
     context.message_pump = MessagePump()
     context.message_pump.start()
 
+    from sirabus.servicebus.inmemory_servicebus import (
+        InMemoryConfiguration,
+        InMemoryServiceBus,
+    )
+
     config = (
         InMemoryConfiguration.for_cloud_event()
         .with_topic_map(context.topic_map)
@@ -222,6 +234,11 @@ def configure_cloudevent_inmemory_service_bus(context):
 
 
 def configure_cloudevent_redis_service_bus(context):
+    from sirabus.servicebus.redis_servicebus import (
+        RedisServiceBusConfiguration,
+        RedisServiceBus,
+    )
+
     config = (
         RedisServiceBusConfiguration.for_cloud_event()
         .with_redis_url(context.connection_string)
@@ -232,6 +249,11 @@ def configure_cloudevent_redis_service_bus(context):
 
 
 def configure_pydantic_redis_service_bus(context):
+    from sirabus.servicebus.redis_servicebus import (
+        RedisServiceBusConfiguration,
+        RedisServiceBus,
+    )
+
     config = (
         RedisServiceBusConfiguration.default()
         .with_redis_url(context.connection_string)
@@ -244,6 +266,11 @@ def configure_pydantic_redis_service_bus(context):
 def configure_pydantic_inmemory_service_bus(context):
     context.message_pump = MessagePump()
     context.message_pump.start()
+
+    from sirabus.servicebus.inmemory_servicebus import (
+        InMemoryConfiguration,
+        InMemoryServiceBus,
+    )
 
     config = (
         InMemoryConfiguration.default()
@@ -286,67 +313,109 @@ async def step_impl4(context, serializer, topic, broker_type):
 
 
 def create_cloudevent_amqp_publisher(context):
-    from sirabus.publisher.cloudevent_publisher import create_publisher_for_amqp
-
-    return create_publisher_for_amqp(
-        amqp_url=context.connection_string, topic_map=context.topic_map
+    from sirabus.publisher.amqp_publisher import (
+        AmqpPublisherConfiguration,
+        AmqpPublisher,
     )
+
+    config = (
+        AmqpPublisherConfiguration.for_cloud_event()
+        .with_amqp_url(context.connection_string)
+        .with_topic_map(context.topic_map)
+    )
+    return AmqpPublisher(config)
 
 
 def create_pydantic_amqp_publisher(context):
-    from sirabus.publisher.pydantic_publisher import create_publisher_for_amqp
-
-    return create_publisher_for_amqp(
-        amqp_url=context.connection_string, topic_map=context.topic_map
+    from sirabus.publisher.amqp_publisher import (
+        AmqpPublisherConfiguration,
+        AmqpPublisher,
     )
+
+    config = (
+        AmqpPublisherConfiguration.default()
+        .with_amqp_url(context.connection_string)
+        .with_topic_map(context.topic_map)
+    )
+    return AmqpPublisher(config)
 
 
 def create_cloudevent_sqs_publisher(context):
-    from sirabus.publisher.cloudevent_publisher import create_publisher_for_sqs
+    from sirabus.publisher.sqs_publisher import SqsPublisherConfiguration, SqsPublisher
 
-    return create_publisher_for_sqs(
-        config=context.sqs_config, topic_map=context.topic_map
+    config = (
+        SqsPublisherConfiguration.for_cloud_event()
+        .with_sqs_config(context.sqs_config)
+        .with_topic_map(context.topic_map)
     )
+    return SqsPublisher(config)
 
 
 def create_pydantic_sqs_publisher(context):
-    from sirabus.publisher.pydantic_publisher import create_publisher_for_sqs
+    from sirabus.publisher.sqs_publisher import SqsPublisherConfiguration, SqsPublisher
 
-    return create_publisher_for_sqs(
-        config=context.sqs_config, topic_map=context.topic_map
+    config = (
+        SqsPublisherConfiguration.default()
+        .with_sqs_config(context.sqs_config)
+        .with_topic_map(context.topic_map)
     )
+    return SqsPublisher(config)
 
 
 def create_cloudevent_inmemory_publisher(context):
-    from sirabus.publisher.cloudevent_publisher import create_publisher_for_inmemory
-
-    return create_publisher_for_inmemory(
-        message_pump=context.message_pump, topic_map=context.topic_map
+    from sirabus.publisher.inmemory_publisher import (
+        InMemoryPublisherConfiguration,
+        InMemoryPublisher,
     )
+
+    config = (
+        InMemoryPublisherConfiguration.for_cloud_event()
+        .with_message_pump(context.message_pump)
+        .with_topic_map(context.topic_map)
+    )
+    return InMemoryPublisher(config)
 
 
 def create_cloudevent_redis_publisher(context):
-    from sirabus.publisher.cloudevent_publisher import create_publisher_for_redis
-
-    return create_publisher_for_redis(
-        redis_url=context.connection_string, topic_map=context.topic_map
+    from sirabus.publisher.redis_publisher import (
+        RedisPublisher,
+        RedisPublisherConfiguration,
     )
+
+    config = (
+        RedisPublisherConfiguration.for_cloud_event()
+        .with_redis_url(context.connection_string)
+        .with_topic_map(context.topic_map)
+    )
+    return RedisPublisher(config)
 
 
 def create_pydantic_inmemory_publisher(context):
-    from sirabus.publisher.pydantic_publisher import create_publisher_for_inmemory
-
-    return create_publisher_for_inmemory(
-        message_pump=context.message_pump, topic_map=context.topic_map
+    from sirabus.publisher.inmemory_publisher import (
+        InMemoryPublisherConfiguration,
+        InMemoryPublisher,
     )
+
+    config = (
+        InMemoryPublisherConfiguration.default()
+        .with_message_pump(context.message_pump)
+        .with_topic_map(context.topic_map)
+    )
+    return InMemoryPublisher(config)
 
 
 def create_pydantic_redis_publisher(context):
-    from sirabus.publisher.pydantic_publisher import create_publisher_for_redis
-
-    return create_publisher_for_redis(
-        redis_url=context.connection_string, topic_map=context.topic_map
+    from sirabus.publisher.redis_publisher import (
+        RedisPublisher,
+        RedisPublisherConfiguration,
     )
+
+    config = (
+        RedisPublisherConfiguration.default()
+        .with_redis_url(context.connection_string)
+        .with_topic_map(context.topic_map)
+    )
+    return RedisPublisher(config)
 
 
 @then("the message is received by the subscriber")

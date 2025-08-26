@@ -7,7 +7,7 @@ from sirabus import CommandResponse
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 
 
-def create_event[TEvent: BaseEvent](
+def write_event[TEvent: BaseEvent](
     event: TEvent, topic_map: HierarchicalTopicMap
 ) -> Tuple[str, str]:
     """
@@ -28,7 +28,7 @@ def create_event[TEvent: BaseEvent](
     return hierarchical_topic, j
 
 
-def read_event_message(
+def read_event(
     topic_map: HierarchicalTopicMap, properties: dict, body: bytes
 ) -> Tuple[dict, BaseEvent]:
     """
@@ -50,7 +50,7 @@ def read_event_message(
     return properties, event
 
 
-def create_command[TCommand: BaseCommand](
+def write_command[TCommand: BaseCommand](
     command: TCommand, topic_map: HierarchicalTopicMap
 ) -> Tuple[str, str, str]:
     """
@@ -71,7 +71,7 @@ def create_command[TCommand: BaseCommand](
     return topic, hierarchical_topic, j
 
 
-def create_command_response(
+def write_command_response(
     command_response: CommandResponse,
 ) -> Tuple[str, bytes]:
     """
