@@ -7,6 +7,20 @@ from behave import step, when, then, use_step_matcher
 from steps.command_handlers import StatusCommandHandler, InfoCommandHandler
 from steps.test_types import StatusCommand, InvalidCommand, InfoCommand
 
+from sirabus.router.amqp_command_router import (
+    AmqpRouterConfiguration,
+    AmqpCommandRouter,
+)
+from sirabus.router.inmemory_command_router import (
+    InMemoryRouterConfiguration,
+    InMemoryCommandRouter,
+)
+from sirabus.router.redis_command_router import (
+    RedisRouterConfiguration,
+    RedisCommandRouter,
+)
+from sirabus.router.sqs_command_router import SqsRouterConfiguration, SqsCommandRouter
+
 use_step_matcher("re")
 
 
@@ -22,61 +36,65 @@ def step_impl1(context):
 async def step_impl2(context, serializer, broker_type):
     match (serializer, broker_type):
         case ("cloudevent", "amqp"):
-            from sirabus.publisher.cloudevent_router import create_amqp_router
-
-            context.router = create_amqp_router(
-                amqp_url=context.connection_string,
-                topic_map=context.topic_map,
+            config = (
+                AmqpRouterConfiguration.for_cloud_event()
+                .with_amqp_url(context.connection_string)
+                .with_topic_map(context.topic_map)
             )
+            context.router = AmqpCommandRouter(configuration=config)
         case ("pydantic", "amqp"):
-            from sirabus.publisher.pydantic_router import create_amqp_router
-
-            context.router = create_amqp_router(
-                amqp_url=context.connection_string,
-                topic_map=context.topic_map,
+            config = (
+                AmqpRouterConfiguration.default()
+                .with_amqp_url(context.connection_string)
+                .with_topic_map(context.topic_map)
             )
+            context.router = AmqpCommandRouter(configuration=config)
         case ("cloudevent", "SQS"):
-            from sirabus.publisher.cloudevent_router import create_sqs_router
-
-            context.router = create_sqs_router(
-                config=context.sqs_config,
-                topic_map=context.topic_map,
+            config = (
+                SqsRouterConfiguration.for_cloud_event()
+                .with_sqs_config(context.sqs_config)
+                .with_topic_map(context.topic_map)
             )
+
+            context.router = SqsCommandRouter(configuration=config)
         case ("pydantic", "SQS"):
-            from sirabus.publisher.pydantic_router import create_sqs_router
-
-            context.router = create_sqs_router(
-                config=context.sqs_config,
-                topic_map=context.topic_map,
+            config = (
+                SqsRouterConfiguration.default()
+                .with_sqs_config(context.sqs_config)
+                .with_topic_map(context.topic_map)
             )
+
+            context.router = SqsCommandRouter(configuration=config)
         case ("cloudevent", "in-memory"):
-            from sirabus.publisher.cloudevent_router import create_inmemory_router
-
-            context.router = create_inmemory_router(
-                message_pump=context.message_pump,
-                topic_map=context.topic_map,
+            config = (
+                InMemoryRouterConfiguration.for_cloud_event()
+                .with_message_pump(context.message_pump)
+                .with_topic_map(context.topic_map)
             )
+
+            context.router = InMemoryCommandRouter(configuration=config)
         case ("pydantic", "in-memory"):
-            from sirabus.publisher.pydantic_router import create_inmemory_router
-
-            context.router = create_inmemory_router(
-                message_pump=context.message_pump,
-                topic_map=context.topic_map,
+            config = (
+                InMemoryRouterConfiguration.default()
+                .with_message_pump(context.message_pump)
+                .with_topic_map(context.topic_map)
             )
+
+            context.router = InMemoryCommandRouter(configuration=config)
         case ("cloudevent", "redis"):
-            from sirabus.publisher.cloudevent_router import create_redis_router
-
-            context.router = create_redis_router(
-                redis_url=context.connection_string,
-                topic_map=context.topic_map,
+            config = (
+                RedisRouterConfiguration.for_cloud_event()
+                .with_redis_url(context.connection_string)
+                .with_topic_map(context.topic_map)
             )
+            context.router = RedisCommandRouter(configuration=config)
         case ("pydantic", "redis"):
-            from sirabus.publisher.pydantic_router import create_redis_router
-
-            context.router = create_redis_router(
-                redis_url=context.connection_string,
-                topic_map=context.topic_map,
+            config = (
+                RedisRouterConfiguration.default()
+                .with_redis_url(context.connection_string)
+                .with_topic_map(context.topic_map)
             )
+            context.router = RedisCommandRouter(configuration=config)
         case _:
             raise ValueError(f"Unknown broker type: {serializer} {broker_type}")
     await asyncio.sleep(0.1)
