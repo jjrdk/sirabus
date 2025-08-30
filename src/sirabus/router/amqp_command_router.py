@@ -96,7 +96,9 @@ class AmqpCommandRouter(IRouteCommands):
     async def _get_connection(self) -> AbstractRobustConnection:
         if self.__connection is None or self.__connection.is_closed:
             self.__connection = await connect_robust(
-                url=self._configuration.get_amqp_url()
+                url=self._configuration.get_amqp_url(),
+                ssl=(self._configuration.get_ssl_config() is not None),
+                ssl_context=self._configuration.get_ssl_config(),
             )
         return self.__connection
 
