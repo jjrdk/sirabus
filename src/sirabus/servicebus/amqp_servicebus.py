@@ -1,3 +1,4 @@
+from ssl import SSLContext
 from typing import Callable, Optional, Tuple
 
 import aio_pika
@@ -137,8 +138,11 @@ class AmqpServiceBus(ServiceBus[AmqpServiceBusConfiguration]):
 
     async def run(self):
         self._configuration.get_logger().debug("Starting service bus")
+        ssl_context = self._configuration.get_ssl_config()
         self.__connection = await aio_pika.connect_robust(
-            url=self._configuration.get_amqp_url()
+            url=self._configuration.get_amqp_url(),
+            ssl=(ssl_context is None),
+            ssl_context=ssl_context,
         )
         self.__channel = await self.__connection.channel()
         await self.__channel.set_qos(

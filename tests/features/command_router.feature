@@ -1,9 +1,9 @@
 Feature: Send commands and receive responses
 
   Scenario Template: Send an command and receive a response
-    Given a running <broker_type> message broker
+    Given a running <broker_type> message broker with TLS disabled
     And commands have been registered in the hierarchical topic map
-    And a <serializer> <broker_type> service bus is configured with the hierarchical topic map
+    And a <serializer> <broker_type> service bus with TLS disabled is configured with the hierarchical topic map
     And a <serializer> <broker_type> router is created with the hierarchical topic map
     When I send the command <command_type>
     Then I receive the <response_type> "<response_msg>"
@@ -28,9 +28,9 @@ Feature: Send commands and receive responses
       | redis       | pydantic   | invalid_command | error         | unknown command |
 
   Scenario Template: Send multiple commands and receive their responses
-    Given a running <broker_type> message broker
+    Given a running <broker_type> message broker with TLS disabled
     And commands have been registered in the hierarchical topic map
-    And a <serializer> <broker_type> service bus is configured with the hierarchical topic map
+    And a <serializer> <broker_type> service bus with TLS disabled is configured with the hierarchical topic map
     And a <serializer> <broker_type> router is created with the hierarchical topic map
     When I send the commands "get_status", "get_info"
     Then I receive the replies "status: ok", "info: system running"

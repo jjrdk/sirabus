@@ -1,10 +1,17 @@
 import logging
-from typing import Set
+import ssl
+from typing import Optional, Set
 
 import aio_pika
-from aio_pika.abc import AbstractRobustConnection, AbstractChannel, ExchangeType
+from aio_pika.abc import (
+    AbstractRobustConnection,
+    AbstractChannel,
+    ExchangeType,
+    SSLOptions,
+)
 
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
+from sirabus.publisher.amqp_publisher import AmqpPublisherConfiguration
 
 
 class TopographyBuilder:
@@ -13,17 +20,17 @@ class TopographyBuilder:
     hierarchical topic map.
     """
 
-    def __init__(self, amqp_url: str, topic_map: HierarchicalTopicMap) -> None:
+    def __init__(self, configuration: AmqpPublisherConfiguration) -> None:
         """
         Initializes the TopographyBuilder with the AMQP URL and topic map.
-        :param amqp_url: The AMQP URL for the service bus.
-        :param topic_map: The hierarchical topic map for topic resolution.
+        :param configuration: The AMQP publisher configuration containing connection details and topic map.
         :raises ValueError: If the topic map is not provided.
         :raises TypeError: If the topic map is not an instance of HierarchicalTopicMap.
         :raises Exception: If there is an error during topography building.
         """
-        self.__amqp_url = amqp_url
-        self.__topic_map = topic_map
+        self.__amqp_url = configuration.get_amqp_url()
+        self.__topic_map = configuration.get_topic_map()
+        self.__ssl_context = configuration.get_ssl_config()
 
     async def build(self) -> None:
         """
@@ -38,7 +45,9 @@ class TopographyBuilder:
         :raises aio_pika.exceptions.AMQPError: For any other AMQP-related errors
         """
         connection: AbstractRobustConnection = await aio_pika.connect_robust(
-            url=self.__amqp_url
+            url=self.__amqp_url,
+            ssl=(self.__ssl_context is None),
+            ssl_context=self.__ssl_context,
         )
         await connection.connect()
         channel: AbstractChannel = await connection.channel()

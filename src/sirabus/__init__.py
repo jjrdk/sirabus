@@ -1,7 +1,8 @@
 import asyncio
 import logging
 from abc import ABC, abstractmethod
-from typing import Self
+from ssl import SSLContext
+from typing import Optional, Self
 
 from aett.eventstore import BaseCommand, BaseEvent
 
@@ -189,6 +190,7 @@ class EndpointConfiguration(ABC):
     def __init__(self):
         self._topic_map = HierarchicalTopicMap()
         self._logger = logging.getLogger("ServiceBus")
+        self._ssl_config = None
 
     def get_topic_map(self) -> HierarchicalTopicMap:
         return self._topic_map
@@ -196,12 +198,21 @@ class EndpointConfiguration(ABC):
     def get_logger(self) -> logging.Logger:
         return self._logger
 
+    def get_ssl_config(self) -> Optional[SSLContext]:
+        return self._ssl_config
+
     def with_topic_map(self, topic_map: HierarchicalTopicMap) -> Self:
         self._topic_map = topic_map
         return self
 
     def with_logger(self, logger: logging.Logger) -> Self:
         self._logger = logger
+        return self
+
+    def with_ssl_config(self, ssl_config: SSLContext):
+        if not isinstance(ssl_config, SSLContext):
+            raise ValueError("ssl_config must be an instance of ssl.SSLContext")
+        self._ssl_config = ssl_config
         return self
 
     @staticmethod

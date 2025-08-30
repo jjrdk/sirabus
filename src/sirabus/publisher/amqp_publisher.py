@@ -66,7 +66,11 @@ class AmqpPublisher(IPublishEvents):
 
         hierarchical_topic, j = self._configuration.write_event(event)
 
-        connection = await connect_robust(url=self._configuration.get_amqp_url())
+        connection = await connect_robust(
+            url=self._configuration.get_amqp_url(),
+            ssl=(self._configuration.get_ssl_config() is not None),
+            ssl_context=self._configuration.get_ssl_config(),
+        )
         channel = await connection.channel()
         exchange = await channel.get_exchange(name="amq.topic", ensure=False)
         self._configuration.get_logger().debug("Channel opened for publishing event.")
