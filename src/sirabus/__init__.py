@@ -19,7 +19,7 @@ class IRouteCommands(ABC):
 
     @abstractmethod
     async def route[TCommand: BaseCommand](
-        self, command: TCommand
+            self, command: TCommand
     ) -> asyncio.Future[CommandResponse]:
         """
         Route a command.
@@ -105,14 +105,14 @@ class SqsConfig:
     """
 
     def __init__(
-        self,
-        aws_access_key_id: str | None = None,
-        aws_secret_access_key: str | None = None,
-        aws_session_token: str | None = None,
-        profile_name: str | None = None,
-        region: str = "us-east-1",
-        endpoint_url: str | None = None,
-        use_tls: bool = True,
+            self,
+            aws_access_key_id: str | None = None,
+            aws_secret_access_key: str | None = None,
+            aws_session_token: str | None = None,
+            profile_name: str | None = None,
+            region: str = "us-east-1",
+            endpoint_url: str | None = None,
+            use_tls: bool = True,
     ):
         """
         Defines the configuration for SQS/SNS clients.
@@ -191,6 +191,7 @@ class EndpointConfiguration(ABC):
         self._topic_map = HierarchicalTopicMap()
         self._logger = logging.getLogger("ServiceBus")
         self._ssl_config = None
+        self._ca_cert_file = None
 
     def get_topic_map(self) -> HierarchicalTopicMap:
         return self._topic_map
@@ -200,6 +201,9 @@ class EndpointConfiguration(ABC):
 
     def get_ssl_config(self) -> Optional[SSLContext]:
         return self._ssl_config
+
+    def get_ca_cert_file(self) -> Optional[str]:
+        return self._ca_cert_file
 
     def with_topic_map(self, topic_map: HierarchicalTopicMap) -> Self:
         self._topic_map = topic_map
@@ -215,10 +219,19 @@ class EndpointConfiguration(ABC):
         self._ssl_config = ssl_config
         return self
 
-    @staticmethod
-    @abstractmethod
-    def default(): ...
+    def with_ca_cert_file(self, ca_cert_file: str) -> Self:
+        import os
+        if not os.path.isfile(ca_cert_file):
+            raise ValueError("ca_cert_file must be a valid file path")
+        self._ca_cert_file = ca_cert_file
+        return self
 
     @staticmethod
     @abstractmethod
-    def for_cloud_event(): ...
+    def default():
+        ...
+
+    @staticmethod
+    @abstractmethod
+    def for_cloud_event():
+        ...

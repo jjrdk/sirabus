@@ -7,6 +7,8 @@ import uuid
 from ssl import SSLContext, Purpose
 
 from behave import given, when, then, step, use_step_matcher
+from testcontainers.core.container import DockerContainer
+from testcontainers.core.image import DockerImage
 from testcontainers.localstack import LocalStackContainer
 from testcontainers.rabbitmq import RabbitMqContainer
 from testcontainers.redis import RedisContainer
@@ -122,8 +124,21 @@ def set_up_sqs_broker(context, use_tls: bool = False):
 
 
 def set_up_redis(context, use_tls: bool = False):
-    container = RedisContainer().start()
-    context.connection_string = f"redis://{container.get_container_host_ip()}:{container.get_exposed_port(6379)}"
+    if use_tls:
+        current_dir = pathlib.Path(__file__).resolve().parent
+        image = DockerImage(path=f"{current_dir}/../../configs", dockerfile_path="redis_tls.Dockerfile",
+                            tag="redis_tls:latest")
+        image.build()
+        try:
+            container = (DockerContainer(image="redis_tls:latest")
+                         .with_volume_mapping(f"{current_dir}/../../configs/certs", "/tls")
+                         .with_exposed_ports(6379)
+                         .start())
+        except Exception as ex:
+            print(ex)
+    else:
+        container = RedisContainer().start()
+    context.connection_string = f"{'rediss' if use_tls else 'redis'}://{container.get_container_host_ip()}:{container.get_exposed_port(6379)}"
     context.containers.append(container)
 
 
@@ -170,18 +185,18 @@ def configure_ssl(config, use_tls: bool):
     import ssl
 
     certs_path = (
-        pathlib.Path(__file__).parent
-        / ".."
-        / ".."
-        / "configs"
-        / "certs"
-        / "ca_certificate.pem"
+            pathlib.Path(__file__).parent
+            / ".."
+            / ".."
+            / "configs"
+            / "certs"
+            / "ca_certificate.pem"
     )
     ssl_context = ssl.create_default_context(
         purpose=ssl.Purpose.SERVER_AUTH, cafile=certs_path
     )
     ssl_context.check_hostname = False
-    return config.with_ssl_config(ssl_context)
+    return config.with_ssl_config(ssl_context).with_ca_cert_file(str(certs_path))
 
 
 async def configure_cloudevent_amqp_service_bus(context, use_tls: bool = False):
