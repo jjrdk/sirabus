@@ -3,6 +3,7 @@ import json
 from typing import Callable, Optional, Tuple
 from typing import Dict, Iterable, Set
 
+from redis.asyncio import Redis
 from aett.eventstore import BaseEvent, BaseCommand
 
 from sirabus import CommandResponse
@@ -66,7 +67,7 @@ class RedisServiceBus(ServiceBus[RedisServiceBusConfiguration]):
     A service bus implementation that uses Redis for message handling.
     This class allows for the consumption of messages from Redis PubSub and the publishing of command responses.
     It supports hierarchical topic mapping and can handle both events and commands.
-    This class is thread-safe and can be used in a multi-threaded environment.
+    This class is thread-safe and can be used in a multithreaded environment.
     It is designed to be used with the Sirabus framework for building event-driven applications.
     It provides methods for running the service bus, stopping it, and sending command responses.
     :note: This class is designed to be used with the Sirabus framework for building event-driven applications.
@@ -84,9 +85,8 @@ class RedisServiceBus(ServiceBus[RedisServiceBusConfiguration]):
         :param RedisServiceBusConfiguration configuration: The Redis service bus configuration.
         """
         super().__init__(configuration=configuration)
-        from redis.asyncio import Redis
 
-        self.__redis_client = Redis.from_url(url=self._configuration.get_redis_url())
+        self.__redis_client = Redis.from_url(url=self._configuration.get_redis_url()) if self._configuration.get_ssl_config() is None else self._build_ssl_redis_client()
         self.__redis_pubsub = self.__redis_client.pubsub()
         self.__topics = set(
             topic
@@ -101,6 +101,18 @@ class RedisServiceBus(ServiceBus[RedisServiceBusConfiguration]):
         )
         self._stopped = False
         self.__read_task: Optional[asyncio.Task] = None
+
+    def _build_ssl_redis_client(self) -> Redis:
+        import urllib3
+        url = urllib3.util.parse_url(self._configuration.get_redis_url())
+        if not url.host or not url.port:
+            raise ValueError("Invalid Redis URL")
+        return Redis(
+            host=url.host,
+            port=url.port,
+            ssl=True,
+            ssl_ca_certs=self._configuration.get_ca_cert_file()
+        )
 
     async def run(self):
         self._configuration.get_logger().debug("Starting Redis service bus")
