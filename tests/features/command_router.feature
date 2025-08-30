@@ -4,7 +4,7 @@ Feature: Send commands and receive responses
     Given a running <broker_type> message broker with TLS disabled
     And commands have been registered in the hierarchical topic map
     And a <serializer> <broker_type> service bus with TLS disabled is configured with the hierarchical topic map
-    And a <serializer> <broker_type> router is created with the hierarchical topic map
+    And a <serializer> <broker_type> router with TLS disabled is created with the hierarchical topic map
     When I send the command <command_type>
     Then I receive the <response_type> "<response_msg>"
 
@@ -31,7 +31,7 @@ Feature: Send commands and receive responses
     Given a running <broker_type> message broker with TLS disabled
     And commands have been registered in the hierarchical topic map
     And a <serializer> <broker_type> service bus with TLS disabled is configured with the hierarchical topic map
-    And a <serializer> <broker_type> router is created with the hierarchical topic map
+    And a <serializer> <broker_type> router with TLS disabled is created with the hierarchical topic map
     When I send the commands "get_status", "get_info"
     Then I receive the replies "status: ok", "info: system running"
 

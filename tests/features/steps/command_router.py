@@ -7,6 +7,7 @@ from behave import step, when, then, use_step_matcher
 from steps.command_handlers import StatusCommandHandler, InfoCommandHandler
 from steps.test_types import StatusCommand, InvalidCommand, InfoCommand
 
+from features.steps.message_handling import configure_ssl
 from sirabus.router.amqp_command_router import (
     AmqpRouterConfiguration,
     AmqpCommandRouter,
@@ -31,22 +32,25 @@ def step_impl1(context):
 
 
 @step(
-    "a (?P<serializer>.+) (?P<broker_type>.+) router is created with the hierarchical topic map"
+    "a (?P<serializer>.+) (?P<broker_type>.+) router with TLS (?P<use_tls>enabled|disabled) is created with the hierarchical topic map"
 )
-async def step_impl2(context, serializer, broker_type):
+async def step_impl2(context, serializer, broker_type, use_tls):
+    use_tls = use_tls.lower() == "enabled"
     match (serializer, broker_type):
         case ("cloudevent", "amqp"):
-            config = (
+            config = configure_ssl(
                 AmqpRouterConfiguration.for_cloud_event()
                 .with_amqp_url(context.connection_string)
-                .with_topic_map(context.topic_map)
+                .with_topic_map(context.topic_map),
+                use_tls=use_tls,
             )
             context.router = AmqpCommandRouter(configuration=config)
         case ("pydantic", "amqp"):
-            config = (
+            config = configure_ssl(
                 AmqpRouterConfiguration.default()
                 .with_amqp_url(context.connection_string)
-                .with_topic_map(context.topic_map)
+                .with_topic_map(context.topic_map),
+                use_tls=use_tls,
             )
             context.router = AmqpCommandRouter(configuration=config)
         case ("cloudevent", "SQS"):
