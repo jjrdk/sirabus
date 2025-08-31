@@ -39,6 +39,7 @@ class MyEvent(BaseEvent):
 class MyEventHandler(IHandleEvents):
     def handle(self, event: MyEvent, headers: dict):
         # Process the event
+        # Raise an exception if processing fails to trigger re-queuing if supported by the transport.
         ...
 
 # Add the handler to the service bus configuration

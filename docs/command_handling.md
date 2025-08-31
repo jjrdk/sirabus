@@ -26,7 +26,6 @@ class MyCommand(BaseCommand):
 class MyCommandHandler(IHandleCommands):
     def handle(self, command: MyCommand, headers: dict) -> CommandResponse:
         # Process the command
-        result = ... # perform action based on command.data
         return CommandResponse(success=True, message="Ok")
 ```
 
