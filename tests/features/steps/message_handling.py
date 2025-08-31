@@ -122,7 +122,9 @@ def set_up_sqs_broker(context, use_tls: bool = False):
         endpoint_url=container.get_url().replace("http://", "https://")
         if use_tls
         else container.get_url(),
-        use_tls=False,
+        alternate_ca_bundle=f"{pathlib.Path(__file__).resolve().parent}/../../configs/certs/ca_certificate.pem"
+        if use_tls
+        else None,
     )
 
 
@@ -135,15 +137,12 @@ def set_up_redis(context, use_tls: bool = False):
             tag="redis_tls:latest",
         )
         image.build()
-        try:
-            container = (
-                DockerContainer(image="redis_tls:latest")
-                .with_volume_mapping(f"{current_dir}/../../configs/certs", "/tls")
-                .with_exposed_ports(6379)
-                .start()
-            )
-        except Exception as ex:
-            print(ex)
+        container = (
+            DockerContainer(image="redis_tls:latest")
+            .with_volume_mapping(f"{current_dir}/../../configs/certs", "/tls")
+            .with_exposed_ports(6379)
+            .start()
+        )
     else:
         container = RedisContainer().start()
     context.connection_string = f"{'rediss' if use_tls else 'redis'}://{container.get_container_host_ip()}:{container.get_exposed_port(6379)}"

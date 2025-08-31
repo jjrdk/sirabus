@@ -141,7 +141,7 @@ class AmqpServiceBus(ServiceBus[AmqpServiceBusConfiguration]):
         ssl_context = self._configuration.get_ssl_config()
         self.__connection = await aio_pika.connect_robust(
             url=self._configuration.get_amqp_url(),
-            ssl=(ssl_context is None),
+            ssl=(ssl_context is not None),
             ssl_context=ssl_context,
         )
         self.__channel = await self.__connection.channel()

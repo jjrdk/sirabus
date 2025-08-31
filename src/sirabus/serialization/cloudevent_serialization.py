@@ -83,7 +83,7 @@ def write_event[TEvent: BaseEvent](
 
 def write_command[TCommand: BaseCommand](
     command: TCommand, topic_map: HierarchicalTopicMap
-) -> Tuple[str, str, str]:
+) -> Tuple[str, str]:
     """
     Creates a CloudEvent from the given command and topic map.
     :param command: The command to create a CloudEvent for.
@@ -114,7 +114,7 @@ def write_command[TCommand: BaseCommand](
         data=command.model_dump(mode="json"),
     )
     j = ce.model_dump_json()
-    return topic, hierarchical_topic, j
+    return hierarchical_topic, j
 
 
 def write_command_response(

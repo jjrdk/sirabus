@@ -15,9 +15,7 @@ class SqsRouterConfiguration(RouterConfiguration):
 
     def __init__(
         self,
-        message_writer: Callable[
-            [BaseCommand, HierarchicalTopicMap], Tuple[str, str, str]
-        ],
+        message_writer: Callable[[BaseCommand, HierarchicalTopicMap], Tuple[str, str]],
         response_reader: Callable[[dict, bytes], CommandResponse | None],
     ) -> None:
         """
@@ -81,7 +79,7 @@ class SqsCommandRouter(IRouteCommands):
     ) -> asyncio.Future[CommandResponse]:
         loop = asyncio.get_event_loop()
         try:
-            _, hierarchical_topic, j = self._configuration.write_message(command)
+            hierarchical_topic, j = self._configuration.write_message(command)
         except ValueError:
             future = loop.create_future()
             future.set_result(CommandResponse(success=False, message="unknown command"))

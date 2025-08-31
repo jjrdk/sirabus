@@ -113,7 +113,6 @@ class RedisServiceBus(ServiceBus[RedisServiceBusConfiguration]):
             raise ValueError("Invalid Redis URL")
         # TODO: Figure out how to do connection pooling with secure redis
         return Redis(
-            # connection_pool=ConnectionPool.from_url(self._configuration.get_redis_url()),
             single_connection_client=False,
             username=url.auth.split(":")[0] if url.auth else None,
             password=url.auth.split(":")[1] if url.auth else None,
@@ -130,10 +129,6 @@ class RedisServiceBus(ServiceBus[RedisServiceBusConfiguration]):
             self._configuration.get_topic_map().build_parent_child_relationships()
         )
         topic_hierarchy = set(self._get_topic_hierarchy(self.__topics, relationships))
-        try:
-            await self.__redis_client.ping()
-        except Exception as e:
-            print(e)
         await self.__redis_pubsub.subscribe(*topic_hierarchy)
         self.__read_task = asyncio.create_task(
             self._consume_messages(),

@@ -21,9 +21,7 @@ class AmqpRouterConfiguration(RouterConfiguration):
 
     def __init__(
         self,
-        message_writer: Callable[
-            [BaseCommand, HierarchicalTopicMap], Tuple[str, str, str]
-        ],
+        message_writer: Callable[[BaseCommand, HierarchicalTopicMap], Tuple[str, str]],
         response_reader: Callable[[dict, bytes], CommandResponse | None],
     ) -> None:
         """
@@ -35,7 +33,7 @@ class AmqpRouterConfiguration(RouterConfiguration):
         super().__init__(message_writer=message_writer, response_reader=response_reader)
         self._amqp_url: Optional[str] = None
         self._message_writer: Callable[
-            [BaseCommand, HierarchicalTopicMap], Tuple[str, str, str]
+            [BaseCommand, HierarchicalTopicMap], Tuple[str, str]
         ] = message_writer
         self._response_reader: Callable[[dict, bytes], CommandResponse | None] = (
             response_reader
@@ -107,7 +105,7 @@ class AmqpCommandRouter(IRouteCommands):
     ) -> asyncio.Future[CommandResponse]:
         loop = asyncio.get_event_loop()
         try:
-            _, hierarchical_topic, j = self._configuration.write_message(command)
+            hierarchical_topic, j = self._configuration.write_message(command)
         except ValueError:
             future = loop.create_future()
             future.set_result(CommandResponse(success=False, message="unknown command"))

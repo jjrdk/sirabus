@@ -84,7 +84,7 @@ class RedisCommandRouter(IRouteCommands):
     ) -> asyncio.Future[CommandResponse]:
         loop = asyncio.get_running_loop()
         try:
-            _, hierarchical_topic, j = self._configuration.write_message(command)
+            hierarchical_topic, j = self._configuration.write_message(command)
         except ValueError:
             future = loop.create_future()
             future.set_result(CommandResponse(success=False, message="unknown command"))
