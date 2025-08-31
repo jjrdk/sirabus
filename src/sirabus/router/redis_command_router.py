@@ -104,16 +104,31 @@ class RedisCommandRouter(IRouteCommands):
         consume_thread.start()
         import json
 
-        async with Redis.from_url(url=self._configuration.get_redis_url()) as client:
+        async with self._build_redis_client() as client:
             await client.publish(channel=hierarchical_topic, message=json.dumps(msg))
         self._configuration.get_logger().debug(f"Published {hierarchical_topic}")
         future = loop.create_future()
         self.__inflight[msg_id] = (future, consume_thread)
         return future
 
+    def _build_redis_client(self) -> Redis:
+        import urllib3
+
+        url = urllib3.util.parse_url(self._configuration.get_redis_url())
+        if not url.host or not url.port:
+            raise ValueError("Invalid Redis URL")
+        return Redis(
+            username=url.auth.split(":")[0] if url.auth else None,
+            password=url.auth.split(":")[1] if url.auth else None,
+            host=url.host,
+            port=url.port,
+            ssl=(url.scheme == "rediss"),
+            ssl_ca_certs=self._configuration.get_ca_cert_file(),
+        )
+
     async def _consume_queue(self, reply_to: str) -> None:
         response_received = False
-        async with Redis.from_url(url=self._configuration.get_redis_url()) as client:
+        async with self._build_redis_client() as client:
             async with client.pubsub() as pubsub:
                 await pubsub.subscribe(reply_to)
                 while not response_received:

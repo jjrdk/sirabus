@@ -19,7 +19,7 @@ class IRouteCommands(ABC):
 
     @abstractmethod
     async def route[TCommand: BaseCommand](
-            self, command: TCommand
+        self, command: TCommand
     ) -> asyncio.Future[CommandResponse]:
         """
         Route a command.
@@ -105,14 +105,14 @@ class SqsConfig:
     """
 
     def __init__(
-            self,
-            aws_access_key_id: str | None = None,
-            aws_secret_access_key: str | None = None,
-            aws_session_token: str | None = None,
-            profile_name: str | None = None,
-            region: str = "us-east-1",
-            endpoint_url: str | None = None,
-            use_tls: bool = True,
+        self,
+        aws_access_key_id: str | None = None,
+        aws_secret_access_key: str | None = None,
+        aws_session_token: str | None = None,
+        profile_name: str | None = None,
+        region: str = "us-east-1",
+        endpoint_url: str | None = None,
+        use_tls: bool = True,
     ):
         """
         Defines the configuration for SQS/SNS clients.
@@ -221,6 +221,7 @@ class EndpointConfiguration(ABC):
 
     def with_ca_cert_file(self, ca_cert_file: str) -> Self:
         import os
+
         if not os.path.isfile(ca_cert_file):
             raise ValueError("ca_cert_file must be a valid file path")
         self._ca_cert_file = ca_cert_file
@@ -228,10 +229,8 @@ class EndpointConfiguration(ABC):
 
     @staticmethod
     @abstractmethod
-    def default():
-        ...
+    def default(): ...
 
     @staticmethod
     @abstractmethod
-    def for_cloud_event():
-        ...
+    def for_cloud_event(): ...

@@ -72,7 +72,7 @@ class RedisPublisher(IPublishEvents):
 
         hierarchical_topic, j = self._configuration.write_event(event)
 
-        async with (Redis.from_url(url=self._configuration.get_redis_url()) if self._configuration.get_ssl_config() is None else self._build_ssl_redis_client()) as redis:
+        async with self._build_redis_client() as redis:
             msg = {
                 "message_id": str(uuid.uuid4()),
                 "body": j,
@@ -81,14 +81,17 @@ class RedisPublisher(IPublishEvents):
             await redis.publish(hierarchical_topic, json.dumps(msg))
             self._configuration.get_logger().debug(f"Published {hierarchical_topic}")
 
-    def _build_ssl_redis_client(self) -> Redis:
+    def _build_redis_client(self) -> Redis:
         import urllib3
+
         url = urllib3.util.parse_url(self._configuration.get_redis_url())
         if not url.host or not url.port:
             raise ValueError("Invalid Redis URL")
         return Redis(
+            username=url.auth.split(":")[0] if url.auth else None,
+            password=url.auth.split(":")[1] if url.auth else None,
             host=url.host,
             port=url.port,
-            ssl=True,
-            ssl_ca_certs=self._configuration.get_ca_cert_file()
+            ssl=(url.scheme == "rediss"),
+            ssl_ca_certs=self._configuration.get_ca_cert_file(),
         )
