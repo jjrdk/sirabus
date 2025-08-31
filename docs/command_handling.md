@@ -16,19 +16,18 @@ the command and returns a result or raises an exception on failure.
 ### Example Implementation
 
 ```python
-class MyCommand:
-    def __init__(self, data):
-        self.data = data
+from sirabus import IHandleCommands, CommandResponse
+from aett.eventstore import BaseCommand
+from pydantic import Field
 
-class MyCommandResponse:
-    def __init__(self, result):
-        self.result = result
+class MyCommand(BaseCommand):
+    data: str = Field(description="Some data")
 
 class MyCommandHandler(IHandleCommands):
-    def handle(self, command: MyCommand) -> CommandResponse:
+    def handle(self, command: MyCommand, headers: dict) -> CommandResponse:
         # Process the command
         result = ... # perform action based on command.data
-        return MyCommandResponse(result)
+        return CommandResponse(success=True, message="Ok")
 ```
 
 ### Registering the Handler
