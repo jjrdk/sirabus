@@ -111,7 +111,6 @@ class RedisServiceBus(ServiceBus[RedisServiceBusConfiguration]):
             return Redis.from_url(redis_url)
         if not url.host or not url.port:
             raise ValueError("Invalid Redis URL")
-        # TODO: Figure out how to do connection pooling with secure redis
         return Redis(
             single_connection_client=False,
             username=url.auth.split(":")[0] if url.auth else None,
