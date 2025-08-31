@@ -49,10 +49,10 @@ def write_event[TEvent: BaseEvent](
     event: TEvent, topic_map: HierarchicalTopicMap
 ) -> Tuple[str, str]:
     """
-    Creates a CloudEvent from the given event and topic map.
+    Writes a CloudEvent from the given event and topic map.
     :param event: The event to create a CloudEvent for.
     :param topic_map: The hierarchical topic map to find the topic for the event type.
-    :return: A tuple containing the topic, hierarchical topic, and the CloudEvent JSON string.
+    :return: A tuple containing the hierarchical topic, and the CloudEvent JSON string.
     :raises ValueError: If the topic for the event type is not found in the hierarchical_topic_map.
     :raises TypeError: If the event type is not a subclass of BaseModel.
     """
@@ -85,10 +85,10 @@ def write_command[TCommand: BaseCommand](
     command: TCommand, topic_map: HierarchicalTopicMap
 ) -> Tuple[str, str]:
     """
-    Creates a CloudEvent from the given command and topic map.
+    Writes a CloudEvent from the given command and topic map.
     :param command: The command to create a CloudEvent for.
     :param topic_map: The hierarchical topic map to find the topic for the command type.
-    :return: A tuple containing the topic, hierarchical topic, and the CloudEvent JSON string.
+    :return: A tuple containing the hierarchical topic, and the CloudEvent JSON string.
     :raises ValueError: If the topic for the command type is not found in the hierarchical_topic_map.
     :raises TypeError: If the command type is not a subclass of BaseModel.
     """

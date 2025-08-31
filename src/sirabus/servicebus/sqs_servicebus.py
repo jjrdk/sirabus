@@ -31,34 +31,91 @@ class SqsServiceBusConfiguration(ServiceBusConfiguration):
         )
         self._sqs_config: Optional[SqsConfig] = None
         self._prefetch_count: int = 10
+        self._request_timeout: int = 1
         import uuid
 
         self._receive_endpoint_name: str = "sqs_" + str(uuid.uuid4())
 
     def get_prefetch_count(self) -> int:
+        """
+        Get the number of messages to prefetch from the SQS queue.
+        """
         return self._prefetch_count
 
     def get_receive_endpoint_name(self) -> str:
+        """
+        Get the name of the SQS queue to receive messages from.
+        :return: The name of the SQS queue.
+        :rtype: str
+        """
         return self._receive_endpoint_name
 
+    def get_request_timeout(self) -> int:
+        """
+        Get the request timeout in seconds.
+        :return: The request timeout in seconds.
+        :rtype: int
+        """
+        return self._request_timeout
+
     def get_sqs_config(self) -> SqsConfig:
+        """
+        Get the SQS configuration.
+        :raises ValueError: If the SQS config is not set.
+        :return: The SQS configuration.
+        """
         if not self._sqs_config:
             raise ValueError("SQS config is not set.")
         return self._sqs_config
 
     def with_prefetch_count(self, prefetch_count: int):
+        """
+        Set the number of messages to prefetch from the SQS queue.
+        :param int prefetch_count: The number of messages to prefetch. Must be >= 1.
+        :raises ValueError: If prefetch_count is less than 1.
+        :return: The SqsServiceBusConfiguration instance.
+        :rtype: SqsServiceBusConfiguration
+        """
         if prefetch_count < 1:
             raise ValueError("prefetch_count must be >= 1")
         self._prefetch_count = prefetch_count
         return self
 
+    def with_request_timeout(self, request_timeout: int):
+        """
+        Set the request timeout in seconds.
+        :param int request_timeout: The request timeout in seconds. Must be > 0.
+        :raises ValueError: If request_timeout is less than or equal to 0.
+        :return: The SqsServiceBusConfiguration instance.
+        :rtype: SqsServiceBusConfiguration
+        """
+        if request_timeout <= 0:
+            raise ValueError("request_timeout must be > 0")
+        self._request_timeout = request_timeout
+        return self
+
     def with_receive_endpoint_name(self, receive_endpoint_name: str):
-        if not receive_endpoint_name or receive_endpoint_name == "":
+        """
+        Set the name of the SQS queue to receive messages from. Use this to set a specific queue name.
+        If not set, a random name will be generated.
+        :param str receive_endpoint_name: The name of the SQS queue.
+        :raises ValueError: If receive_endpoint_name is empty.
+        :return: The SqsServiceBusConfiguration instance.
+        :rtype: SqsServiceBusConfiguration
+        """
+        if not receive_endpoint_name:
             raise ValueError("receive_endpoint_name must not be empty")
         self._receive_endpoint_name = receive_endpoint_name
         return self
 
     def with_sqs_config(self, sqs_config: SqsConfig):
+        """
+        Set the SQS configuration.
+        :param SqsConfig sqs_config: The SQS configuration.
+        :raises ValueError: If sqs_config is None.
+        :return: The SqsServiceBusConfiguration instance.
+        :rtype: SqsServiceBusConfiguration
+        """
         self._sqs_config = sqs_config
         return self
 
@@ -209,12 +266,12 @@ class SqsServiceBus(ServiceBus[SqsServiceBusConfiguration]):
                 self._configuration.get_logger().exception(
                     "Error receiving messages from SQS queue", exc_info=e
                 )
-                time.sleep(1)
+                time.sleep(self._configuration.get_request_timeout())
                 continue
 
             messages = response.get("Messages", [])
             if not messages:
-                time.sleep(1)
+                time.sleep(self._configuration.get_request_timeout())
                 continue
             for message in messages:
                 body = json.loads(message.get("Body", None))

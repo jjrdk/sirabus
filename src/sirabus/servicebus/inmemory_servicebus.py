@@ -25,11 +25,24 @@ class InMemoryConfiguration(ServiceBusConfiguration):
         self.response_writer = command_response_writer
 
     def get_message_pump(self) -> MessagePump:
+        """
+        Get the message pump.
+        :return: The message pump.
+        :rtype: MessagePump
+        :raises ValueError: If the message pump is not set.
+        """
         if not self._message_pump:
             raise ValueError("Message pump is not set.")
         return self._message_pump
 
     def with_message_pump(self, message_pump: MessagePump) -> Self:
+        """
+        Set the message pump.
+        :param message_pump: The message pump.
+        :return: The in-memory service bus configuration.
+        :rtype: InMemoryConfiguration
+        :raises ValueError: If the message pump is None.
+        """
         self._message_pump = message_pump
         return self
 

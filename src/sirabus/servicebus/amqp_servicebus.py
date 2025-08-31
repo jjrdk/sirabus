@@ -1,4 +1,3 @@
-from ssl import SSLContext
 from typing import Callable, Optional, Tuple
 
 import aio_pika
@@ -10,8 +9,8 @@ from aio_pika.abc import (
 )
 
 from sirabus import IHandleEvents, IHandleCommands, CommandResponse, get_type_param
-from sirabus.servicebus import ServiceBusConfiguration, ServiceBus
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
+from sirabus.servicebus import ServiceBusConfiguration, ServiceBus
 
 
 class AmqpServiceBusConfiguration(ServiceBusConfiguration):
@@ -33,25 +32,64 @@ class AmqpServiceBusConfiguration(ServiceBusConfiguration):
         self._receive_endpoint_name: str = str(uuid.uuid4())
 
     def get_amqp_url(self) -> Optional[str]:
+        """
+        Get the AMQP URL.
+        :return: The AMQP URL.
+        :rtype: str
+        :raises ValueError: If the AMQP URL is not set.
+        """
         return self._amqp_url
 
     def get_prefetch_count(self) -> int:
+        """
+        Get the prefetch count.
+        :return: The prefetch count.
+        :rtype: int
+        :raises ValueError: If the prefetch count is less than 1.
+        """
         return self._prefetch_count
 
     def get_receive_endpoint_name(self) -> str:
+        """
+        Get the receive endpoint name.
+        :return: The receive endpoint name.
+        :rtype: str
+        :raises ValueError: If the receive endpoint name is not set.
+        """
         return self._receive_endpoint_name
 
     def with_amqp_url(self, amqp_url: str):
+        """
+        Set the AMQP URL.
+        :param amqp_url: The AMQP URL.
+        :return: The AMQP service bus configuration.
+        :rtype: AmqpServiceBusConfiguration
+        :raises ValueError: If the AMQP URL is empty.
+        """
         self._amqp_url = amqp_url
         return self
 
     def with_prefetch_count(self, prefetch_count: int):
+        """
+        Set the prefetch count.
+        :param prefetch_count: The prefetch count.
+        :return: The AMQP service bus configuration.
+        :rtype: AmqpServiceBusConfiguration
+        :raises ValueError: If the prefetch count is less than 1.
+        """
         if prefetch_count < 1:
             raise ValueError("prefetch_count must be >= 1")
         self._prefetch_count = prefetch_count
         return self
 
     def with_receive_endpoint_name(self, receive_endpoint_name: str):
+        """
+        Set the receive endpoint name.
+        :param receive_endpoint_name: The receive endpoint name.
+        :return: The AMQP service bus configuration.
+        :rtype: AmqpServiceBusConfiguration
+        :raises ValueError: If the receive endpoint name is empty.
+        """
         if not receive_endpoint_name or receive_endpoint_name == "":
             raise ValueError("receive_endpoint_name must not be empty")
         self._receive_endpoint_name = receive_endpoint_name

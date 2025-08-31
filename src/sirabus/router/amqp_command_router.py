@@ -40,11 +40,22 @@ class AmqpRouterConfiguration(RouterConfiguration):
         )
 
     def get_amqp_url(self) -> str:
+        """
+        Gets the AMQP URL.
+        :return: The AMQP URL.
+        :raises ValueError: If the amqp_url is empty.
+        """
         if not self._amqp_url:
             raise ValueError("amqp_url has not been set.")
         return self._amqp_url
 
     def with_amqp_url(self, amqp_url: str) -> Self:
+        """
+        Sets the AMQP URL.
+        :param str amqp_url: The AMQP URL to set.
+        :return: The AmqpRouterConfiguration instance.
+        :raises ValueError: If the amqp_url is empty.
+        """
         if not amqp_url:
             raise ValueError("amqp_url cannot be empty.")
         self._amqp_url = amqp_url
