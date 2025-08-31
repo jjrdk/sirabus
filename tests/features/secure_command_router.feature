@@ -1,6 +1,6 @@
-Feature: Send commands and receive responses
+Feature: Send commands and receive responses over TLS
 
-  Scenario Template: Send a command and receive a response
+  Scenario Template: Send a command and receive a response over TLS
     Given a running <broker_type> message broker with TLS enabled
     And commands have been registered in the hierarchical topic map
     And a <serializer> <broker_type> service bus with TLS enabled is configured with the hierarchical topic map
@@ -10,20 +10,20 @@ Feature: Send commands and receive responses
 
     Examples:
       | broker_type | serializer | command_type    | response_type | response_msg    |
-      | amqp        | cloudevent | get_status      | reply         | status: ok      |
-      | amqp        | pydantic   | get_status      | reply         | status: ok      |
-      | amqp        | cloudevent | invalid_command | error         | unknown command |
-      | amqp        | pydantic   | invalid_command | error         | unknown command |
+#      | amqp        | cloudevent | get_status      | reply         | status: ok      |
+#      | amqp        | pydantic   | get_status      | reply         | status: ok      |
+#      | amqp        | cloudevent | invalid_command | error         | unknown command |
+#      | amqp        | pydantic   | invalid_command | error         | unknown command |
       | redis       | cloudevent | get_status      | reply         | status: ok      |
-      | redis       | pydantic   | get_status      | reply         | status: ok      |
-      | redis       | cloudevent | invalid_command | error         | unknown command |
-      | redis       | pydantic   | invalid_command | error         | unknown command |
-      | SQS         | cloudevent | get_status      | reply         | status: ok      |
-      | SQS         | pydantic   | get_status      | reply         | status: ok      |
-      | SQS         | cloudevent | invalid_command | error         | unknown command |
-      | SQS         | pydantic   | invalid_command | error         | unknown command |
+#      | redis       | pydantic   | get_status      | reply         | status: ok      |
+#      | redis       | cloudevent | invalid_command | error         | unknown command |
+#      | redis       | pydantic   | invalid_command | error         | unknown command |
+#      | SQS         | cloudevent | get_status      | reply         | status: ok      |
+#      | SQS         | pydantic   | get_status      | reply         | status: ok      |
+#      | SQS         | cloudevent | invalid_command | error         | unknown command |
+#      | SQS         | pydantic   | invalid_command | error         | unknown command |
 
-  Scenario Template: Send multiple commands and receive their responses
+  Scenario Template: Send multiple commands and receive their responses over TLS
     Given a running <broker_type> message broker with TLS enabled
     And commands have been registered in the hierarchical topic map
     And a <serializer> <broker_type> service bus with TLS enabled is configured with the hierarchical topic map

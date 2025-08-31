@@ -1,6 +1,6 @@
 Feature: Send commands and receive responses
 
-  Scenario Template: Send an command and receive a response
+  Scenario Template: Send a command and receive a response
     Given a running <broker_type> message broker with TLS disabled
     And commands have been registered in the hierarchical topic map
     And a <serializer> <broker_type> service bus with TLS disabled is configured with the hierarchical topic map

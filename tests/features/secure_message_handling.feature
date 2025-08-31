@@ -1,4 +1,4 @@
-Feature: Event Handling
+Feature: Secure Event Handling
 
   Scenario Template: Secure message publishing and subscription
     Given a running <broker_type> message broker with TLS enabled
@@ -23,7 +23,7 @@ Feature: Event Handling
       | SQS         | pydantic   | test.test_sub.nested |
       | SQS         | pydantic   | test                 |
 
-  Scenario Template: Multiple event handling segregation
+  Scenario Template: Multiple event handling segregation over TLS
     Given a running <broker_type> message broker with TLS enabled
     And events have been registered in the hierarchical topic map
     And a <serializer> <broker_type> service bus with TLS enabled is configured with the hierarchical topic map

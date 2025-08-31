@@ -3,8 +3,8 @@ import json
 from typing import Callable, Optional, Tuple
 from typing import Dict, Iterable, Set
 
-from redis.asyncio import Redis
 from aett.eventstore import BaseEvent, BaseCommand
+from redis.asyncio import Redis, ConnectionPool
 
 from sirabus import CommandResponse
 from sirabus import IHandleEvents, IHandleCommands, get_type_param
@@ -105,15 +105,21 @@ class RedisServiceBus(ServiceBus[RedisServiceBusConfiguration]):
     def _build_redis_client(self) -> Redis:
         import urllib3
 
-        url = urllib3.util.parse_url(self._configuration.get_redis_url())
+        redis_url = self._configuration.get_redis_url()
+        url = urllib3.util.parse_url(redis_url)
+        if url.scheme == "redis":
+            return Redis.from_url(redis_url)
         if not url.host or not url.port:
             raise ValueError("Invalid Redis URL")
+        # TODO: Figure out how to do connection pooling with secure redis
         return Redis(
+            # connection_pool=ConnectionPool.from_url(self._configuration.get_redis_url()),
+            single_connection_client=False,
             username=url.auth.split(":")[0] if url.auth else None,
             password=url.auth.split(":")[1] if url.auth else None,
             host=url.host,
             port=url.port,
-            ssl=(url.scheme == "rediss"),
+            ssl=True,
             ssl_ca_certs=self._configuration.get_ca_cert_file(),
         )
 
@@ -124,6 +130,10 @@ class RedisServiceBus(ServiceBus[RedisServiceBusConfiguration]):
             self._configuration.get_topic_map().build_parent_child_relationships()
         )
         topic_hierarchy = set(self._get_topic_hierarchy(self.__topics, relationships))
+        try:
+            await self.__redis_client.ping()
+        except Exception as e:
+            print(e)
         await self.__redis_pubsub.subscribe(*topic_hierarchy)
         self.__read_task = asyncio.create_task(
             self._consume_messages(),
