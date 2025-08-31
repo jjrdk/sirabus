@@ -15,7 +15,8 @@ a production environment.
 ## Example Usage
 
 ```python
-from sirabus import AmqpServiceBus, HierarchicalTopicMap, IHandleEvents
+from sirabus import HierarchicalTopicMap, IHandleEvents
+from sirabus.servicebus.amqp_servicebus import AmqpServiceBus, AmqpServiceBusConfiguration
 import asyncio
 
 
@@ -25,17 +26,13 @@ class MyEventHandler(IHandleEvents):
 
 
 topic_map = HierarchicalTopicMap()
-handlers = [MyEventHandler()]
-amqp_url = "amqp://guest:guest@localhost/"
-message_reader = lambda topic_map, headers, body: (headers, BaseEvent.from_json(body))
-command_response_writer = lambda response: ("response_topic", response.to_json().encode('utf-8'))
+config = (AmqpServiceBusConfiguration.default()
+    .with_amqp_url("amqp://guest:guest@localhost/")
+    .with_topic_map(topic_map=topic_map)
+    .with_handlers(MyEventHandler()))
+# It can be further configured with SSL options, prefetch count, etc.
 service_bus = AmqpServiceBus(
-    amqp_url=amqp_url,
-    topic_map=topic_map,
-    handlers=handlers,
-    message_reader=message_reader,
-    command_response_writer=command_response_writer,
-    prefetch_count=10,
+    configuration=config
 )
 asyncio.run(service_bus.run())
 ```
