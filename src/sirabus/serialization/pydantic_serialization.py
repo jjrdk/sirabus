@@ -52,7 +52,7 @@ def read_event(
 
 def write_command[TCommand: BaseCommand](
     command: TCommand, topic_map: HierarchicalTopicMap
-) -> Tuple[str, str, str]:
+) -> Tuple[str, str]:
     """
     Create a command message for publishing.
     :param command: The command to publish.
@@ -60,7 +60,6 @@ def write_command[TCommand: BaseCommand](
     :return: A tuple containing the topic, hierarchical topic, and JSON representation of the command
     """
     command_type = type(command)
-    topic = Topic.get(command_type)
     hierarchical_topic = topic_map.get_from_type(command_type)
 
     if not hierarchical_topic:
@@ -68,7 +67,7 @@ def write_command[TCommand: BaseCommand](
             f"Topic for event type {command_type} not found in hierarchical_topic map."
         )
     j = command.model_dump_json()
-    return topic, hierarchical_topic, j
+    return hierarchical_topic, j
 
 
 def write_command_response(

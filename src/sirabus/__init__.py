@@ -112,7 +112,7 @@ class SqsConfig:
         profile_name: str | None = None,
         region: str = "us-east-1",
         endpoint_url: str | None = None,
-        use_tls: bool = True,
+        alternate_ca_bundle: str | None = None,
     ):
         """
         Defines the configuration for SQS/SNS clients.
@@ -130,7 +130,7 @@ class SqsConfig:
         self._aws_session_token = aws_session_token
         self._aws_secret_access_key = aws_secret_access_key
         self._aws_access_key_id = aws_access_key_id
-        self._use_tls = use_tls
+        self._alternate_ca_bundle = alternate_ca_bundle
         self._region = region
         self._endpoint_url = endpoint_url
         self._profile_name = profile_name
@@ -157,10 +157,10 @@ class SqsConfig:
             service_name="sns",
             region_name=self._region,
             endpoint_url=self._endpoint_url,
-            verify=self._use_tls,
+            verify=self._alternate_ca_bundle if self._alternate_ca_bundle else True,
         )
 
-    def to_sqs_client(self):
+    def to_sqs_client(self, alternate_ca_bundle: str | None = None):
         """
         Creates an SQS client using the provided configuration.
         :return: An SQS client configured with the specified AWS credentials and settings.
@@ -182,7 +182,7 @@ class SqsConfig:
             service_name="sqs",
             region_name=self._region,
             endpoint_url=self._endpoint_url,
-            verify=self._use_tls,
+            verify=self._alternate_ca_bundle if self._alternate_ca_bundle else True,
         )
 
 

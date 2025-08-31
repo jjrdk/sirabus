@@ -12,9 +12,7 @@ class RouterConfiguration(EndpointConfiguration, abc.ABC):
 
     def __init__(
         self,
-        message_writer: Callable[
-            [BaseCommand, HierarchicalTopicMap], Tuple[str, str, str]
-        ],
+        message_writer: Callable[[BaseCommand, HierarchicalTopicMap], Tuple[str, str]],
         response_reader: Callable[[dict, bytes], CommandResponse | None],
     ) -> None:
         """
@@ -25,13 +23,13 @@ class RouterConfiguration(EndpointConfiguration, abc.ABC):
         """
         super().__init__()
         self._message_writer: Callable[
-            [BaseCommand, HierarchicalTopicMap], Tuple[str, str, str]
+            [BaseCommand, HierarchicalTopicMap], Tuple[str, str]
         ] = message_writer
         self._response_reader: Callable[[dict, bytes], CommandResponse | None] = (
             response_reader
         )
 
-    def write_message(self, command: BaseCommand) -> Tuple[str, str, str]:
+    def write_message(self, command: BaseCommand) -> Tuple[str, str]:
         return self._message_writer(command, self.get_topic_map())
 
     def read_response(self, headers: dict, body: bytes) -> CommandResponse | None:

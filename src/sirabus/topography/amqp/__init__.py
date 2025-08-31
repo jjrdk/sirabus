@@ -1,16 +1,13 @@
 import logging
-import ssl
-from typing import Optional, Set
+from typing import Set
 
 import aio_pika
 from aio_pika.abc import (
     AbstractRobustConnection,
     AbstractChannel,
     ExchangeType,
-    SSLOptions,
 )
 
-from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 from sirabus.publisher.amqp_publisher import AmqpPublisherConfiguration
 
 
@@ -46,7 +43,7 @@ class TopographyBuilder:
         """
         connection: AbstractRobustConnection = await aio_pika.connect_robust(
             url=self.__amqp_url,
-            ssl=(self.__ssl_context is None),
+            ssl=(self.__ssl_context is not None),
             ssl_context=self.__ssl_context,
         )
         await connection.connect()

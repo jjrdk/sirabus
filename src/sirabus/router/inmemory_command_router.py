@@ -110,7 +110,7 @@ class InMemoryCommandRouter(IRouteCommands):
         self,
         command: TCommand,  # type: ignore
     ) -> Tuple[dict, bytes]:
-        _, __, j = self._configuration.write_message(command)
+        _, j = self._configuration.write_message(command)
         return {}, j.encode()
 
     def _remove_consumer(self, consumer: MessageConsumer) -> None:
