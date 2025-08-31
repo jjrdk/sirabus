@@ -22,7 +22,7 @@ redis = [
     "redis>=6.4"
 ]
 sqs = [
-    "boto3>=1.40"
+    "boto3>=1.40.21"
 ]
 cloudevents = [
     "cloudevents>=1.12.0",
@@ -30,12 +30,12 @@ cloudevents = [
 
 [dependency-groups]
 dev = [
-    "behave>=1.3.1",
+    "behave>=1.3.2",
     "mypy>=1.17",
-    "ruff>=0.12",
+    "ruff>=0.12.11",
     "testcontainers[redis]>=4.12",
     "pika>=1.3",
-    "boto3-stubs>=1.40",
+    "boto3-stubs>=1.40.21",
 ]
 
 [tool.behave]
