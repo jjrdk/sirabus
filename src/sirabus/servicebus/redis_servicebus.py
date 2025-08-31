@@ -86,7 +86,7 @@ class RedisServiceBus(ServiceBus[RedisServiceBusConfiguration]):
         """
         super().__init__(configuration=configuration)
 
-        self.__redis_client = Redis.from_url(url=self._configuration.get_redis_url()) if self._configuration.get_ssl_config() is None else self._build_ssl_redis_client()
+        self.__redis_client = self._build_redis_client()
         self.__redis_pubsub = self.__redis_client.pubsub()
         self.__topics = set(
             topic
@@ -102,16 +102,19 @@ class RedisServiceBus(ServiceBus[RedisServiceBusConfiguration]):
         self._stopped = False
         self.__read_task: Optional[asyncio.Task] = None
 
-    def _build_ssl_redis_client(self) -> Redis:
+    def _build_redis_client(self) -> Redis:
         import urllib3
+
         url = urllib3.util.parse_url(self._configuration.get_redis_url())
         if not url.host or not url.port:
             raise ValueError("Invalid Redis URL")
         return Redis(
+            username=url.auth.split(":")[0] if url.auth else None,
+            password=url.auth.split(":")[1] if url.auth else None,
             host=url.host,
             port=url.port,
-            ssl=True,
-            ssl_ca_certs=self._configuration.get_ca_cert_file()
+            ssl=(url.scheme == "rediss"),
+            ssl_ca_certs=self._configuration.get_ca_cert_file(),
         )
 
     async def run(self):

@@ -7,7 +7,7 @@ from behave import step, when, then, use_step_matcher
 from steps.command_handlers import StatusCommandHandler, InfoCommandHandler
 from steps.test_types import StatusCommand, InvalidCommand, InfoCommand
 
-from features.steps.message_handling import configure_ssl
+from steps.message_handling import configure_ssl
 from sirabus.router.amqp_command_router import (
     AmqpRouterConfiguration,
     AmqpCommandRouter,
@@ -54,18 +54,20 @@ async def step_impl2(context, serializer, broker_type, use_tls):
             )
             context.router = AmqpCommandRouter(configuration=config)
         case ("cloudevent", "SQS"):
-            config = (
+            config = configure_ssl(
                 SqsRouterConfiguration.for_cloud_event()
                 .with_sqs_config(context.sqs_config)
-                .with_topic_map(context.topic_map)
+                .with_topic_map(context.topic_map),
+                use_tls=use_tls,
             )
 
             context.router = SqsCommandRouter(configuration=config)
         case ("pydantic", "SQS"):
-            config = (
+            config = configure_ssl(
                 SqsRouterConfiguration.default()
                 .with_sqs_config(context.sqs_config)
-                .with_topic_map(context.topic_map)
+                .with_topic_map(context.topic_map),
+                use_tls=use_tls,
             )
 
             context.router = SqsCommandRouter(configuration=config)
@@ -86,17 +88,19 @@ async def step_impl2(context, serializer, broker_type, use_tls):
 
             context.router = InMemoryCommandRouter(configuration=config)
         case ("cloudevent", "redis"):
-            config = (
+            config = configure_ssl(
                 RedisRouterConfiguration.for_cloud_event()
                 .with_redis_url(context.connection_string)
-                .with_topic_map(context.topic_map)
+                .with_topic_map(context.topic_map),
+                use_tls=use_tls,
             )
             context.router = RedisCommandRouter(configuration=config)
         case ("pydantic", "redis"):
-            config = (
+            config = configure_ssl(
                 RedisRouterConfiguration.default()
                 .with_redis_url(context.connection_string)
-                .with_topic_map(context.topic_map)
+                .with_topic_map(context.topic_map),
+                use_tls=use_tls,
             )
             context.router = RedisCommandRouter(configuration=config)
         case _:

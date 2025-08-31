@@ -1,10 +1,8 @@
 import asyncio
 import datetime
 import logging
-import os
 import pathlib
 import uuid
-from ssl import SSLContext, Purpose
 
 from behave import given, when, then, step, use_step_matcher
 from testcontainers.core.container import DockerContainer
@@ -106,19 +104,24 @@ def set_up_amqp_broker(context, use_tls: bool = False):
 def set_up_sqs_broker(context, use_tls: bool = False):
     container = (
         LocalStackContainer(image="localstack/localstack:latest")
+        .with_env("DEBUG", "1")
         .with_services("sns", "sqs")
+        .with_volume_mapping(
+            f"{pathlib.Path(__file__).resolve().parent}/../../configs/certs",
+            "/var/lib/localstack/cache",
+        )
         .start()
     )
     context.containers.append(container)
-    context.sns_client = container.get_client("sns")
-    context.sqs_client = container.get_client("sqs")
     context.sqs_config = SqsConfig(
         container.env["AWS_ACCESS_KEY_ID"],
         container.env["AWS_SECRET_ACCESS_KEY"],
         aws_session_token=None,
         profile_name=None,
         region=container.region_name,
-        endpoint_url=context.sqs_client.meta.endpoint_url,
+        endpoint_url=container.get_url().replace("http://", "https://")
+        if use_tls
+        else container.get_url(),
         use_tls=False,
     )
 
@@ -126,14 +129,19 @@ def set_up_sqs_broker(context, use_tls: bool = False):
 def set_up_redis(context, use_tls: bool = False):
     if use_tls:
         current_dir = pathlib.Path(__file__).resolve().parent
-        image = DockerImage(path=f"{current_dir}/../../configs", dockerfile_path="redis_tls.Dockerfile",
-                            tag="redis_tls:latest")
+        image = DockerImage(
+            path=f"{current_dir}/../../configs",
+            dockerfile_path="redis_tls.Dockerfile",
+            tag="redis_tls:latest",
+        )
         image.build()
         try:
-            container = (DockerContainer(image="redis_tls:latest")
-                         .with_volume_mapping(f"{current_dir}/../../configs/certs", "/tls")
-                         .with_exposed_ports(6379)
-                         .start())
+            container = (
+                DockerContainer(image="redis_tls:latest")
+                .with_volume_mapping(f"{current_dir}/../../configs/certs", "/tls")
+                .with_exposed_ports(6379)
+                .start()
+            )
         except Exception as ex:
             print(ex)
     else:
@@ -185,12 +193,12 @@ def configure_ssl(config, use_tls: bool):
     import ssl
 
     certs_path = (
-            pathlib.Path(__file__).parent
-            / ".."
-            / ".."
-            / "configs"
-            / "certs"
-            / "ca_certificate.pem"
+        pathlib.Path(__file__).parent
+        / ".."
+        / ".."
+        / "configs"
+        / "certs"
+        / "ca_certificate.pem"
     )
     ssl_context = ssl.create_default_context(
         purpose=ssl.Purpose.SERVER_AUTH, cafile=certs_path
