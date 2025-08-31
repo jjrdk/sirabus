@@ -17,7 +17,7 @@ class RedisRouterConfiguration(RouterConfiguration):
     def __init__(
         self,
         message_writer: Callable[
-            [BaseCommand, HierarchicalTopicMap], Tuple[str, str, str]
+            [BaseCommand, HierarchicalTopicMap], Tuple[str, str]
         ],
         response_reader: Callable[[dict, bytes], CommandResponse | None],
     ) -> None:
@@ -30,11 +30,22 @@ class RedisRouterConfiguration(RouterConfiguration):
         self._redis_url: Optional[str] = None
 
     def get_redis_url(self) -> str:
+        """
+        Gets the Redis URL.
+        :return: The Redis URL.
+        :raises ValueError: If the redis_url is not set.
+        """
         if not self._redis_url:
             raise ValueError("redis_url has not been set.")
         return self._redis_url
 
     def with_redis_url(self, redis_url: str) -> "RedisRouterConfiguration":
+        """
+        Sets the Redis URL.
+        :param str redis_url: The Redis URL to set.
+        :return: The RedisRouterConfiguration instance.
+        :raises ValueError: If the redis_url is None or empty.
+        """
         if not redis_url:
             raise ValueError("redis_url cannot be None or empty.")
         self._redis_url = redis_url

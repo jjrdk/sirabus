@@ -124,7 +124,7 @@ class SqsConfig:
         :param aws_session_token: The AWS session token
         :param region: The AWS region
         :param endpoint_url: The endpoint URL
-        :param use_tls: Whether to use TLS
+        :param alternate_ca_bundle: The path to an alternate CA bundle file
         :param profile_name: The profile name
         """
         self._aws_session_token = aws_session_token
@@ -188,38 +188,82 @@ class SqsConfig:
 
 class EndpointConfiguration(ABC):
     def __init__(self):
+        """
+        Initializes the EndpointConfiguration with default values.
+        The default topic map is an instance of HierarchicalTopicMap. The default logger is set to "ServiceBus".
+        The SSL/TLS configuration and CA certificate file are initialized to None.
+        """
         self._topic_map = HierarchicalTopicMap()
         self._logger = logging.getLogger("ServiceBus")
         self._ssl_config = None
         self._ca_cert_file = None
 
     def get_topic_map(self) -> HierarchicalTopicMap:
+        """
+        Gets the topic map for the endpoint configuration.
+        :return: An instance of HierarchicalTopicMap used for topic mapping.
+        """
         return self._topic_map
 
     def get_logger(self) -> logging.Logger:
+        """
+        Gets the logger for the endpoint configuration.
+        :return: An instance of logging.Logger used for logging.
+        """
         return self._logger
 
     def get_ssl_config(self) -> Optional[SSLContext]:
+        """
+        Gets the SSL/TLS configuration for secure connections.
+        """
         return self._ssl_config
 
     def get_ca_cert_file(self) -> Optional[str]:
+        """
+        Gets the CA certificate file path for SSL/TLS connections.
+        """
         return self._ca_cert_file
 
     def with_topic_map(self, topic_map: HierarchicalTopicMap) -> Self:
+        """
+        Sets the topic map for the endpoint configuration.
+        :param topic_map: An instance of HierarchicalTopicMap to be used for topic mapping.
+        :return: The EndpointConfiguration instance.
+        """
         self._topic_map = topic_map
         return self
 
     def with_logger(self, logger: logging.Logger) -> Self:
+        """
+        Sets the logger for the endpoint configuration.
+        :param logger: An instance of logging.Logger to be used for logging.
+        :return: The EndpointConfiguration instance.
+        """
         self._logger = logger
         return self
 
     def with_ssl_config(self, ssl_config: SSLContext):
+        """
+        Sets the SSL/TLS configuration for secure connections.
+        :param ssl_config: An instance of ssl.SSLContext containing the SSL/TLS configuration.
+        :return: The EndpointConfiguration instance.
+        :raises ValueError: If the ssl_config is not an instance of ssl.SSLContext
+        """
         if not isinstance(ssl_config, SSLContext):
             raise ValueError("ssl_config must be an instance of ssl.SSLContext")
         self._ssl_config = ssl_config
         return self
 
     def with_ca_cert_file(self, ca_cert_file: str) -> Self:
+        """
+        Sets the CA certificate file path for SSL/TLS connections.
+        This is generally expected to be used in conjunction with a custom SSLContext.
+        The CA certificate file is generally a PEM file containing one or more CA certificates, but can be in other
+        formats depending on the SSL library being used.
+        :param ca_cert_file: The file path to the CA certificate.
+        :return: The EndpointConfiguration instance.
+        :raises ValueError: If the ca_cert_file is not a valid file path.
+        """
         import os
 
         if not os.path.isfile(ca_cert_file):
@@ -229,8 +273,18 @@ class EndpointConfiguration(ABC):
 
     @staticmethod
     @abstractmethod
-    def default(): ...
+    def default():
+        """
+        Creates a default EndpointConfiguration instance with standard serialization methods.
+        :return: An EndpointConfiguration instance with default settings.
+        """
+        ...
 
     @staticmethod
     @abstractmethod
-    def for_cloud_event(): ...
+    def for_cloud_event():
+        """
+        Creates an EndpointConfiguration instance configured for CloudEvents serialization.
+        :return: An EndpointConfiguration instance with CloudEvents settings.
+        """
+        ...

@@ -28,11 +28,22 @@ class SqsRouterConfiguration(RouterConfiguration):
         self._sqs_config: Optional[SqsConfig] = None
 
     def get_sqs_config(self) -> SqsConfig:
+        """
+        Gets the SQS configuration.
+        :return: The SQS configuration.
+        :raises ValueError: If the sqs_config is not set.
+        """
         if not self._sqs_config:
             raise ValueError("sqs_config has not been set.")
         return self._sqs_config
 
     def with_sqs_config(self, config: SqsConfig) -> Self:
+        """
+        Sets the SQS configuration.
+        :param SqsConfig config: The SQS configuration to set.
+        :return: The SqsRouterConfiguration instance.
+        :raises ValueError: If the sqs_config is None.
+        """
         if not config:
             raise ValueError("config cannot be None.")
         self._sqs_config = config

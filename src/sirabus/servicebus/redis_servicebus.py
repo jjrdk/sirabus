@@ -27,11 +27,24 @@ class RedisServiceBusConfiguration(ServiceBusConfiguration):
         self._redis_url: Optional[str] = None
 
     def get_redis_url(self) -> str:
+        """
+        Get the Redis URL.
+        :return: The Redis URL.
+        :rtype: str
+        :raises ValueError: If the Redis URL is not set.
+        """
         if not self._redis_url:
             raise ValueError("Redis URL is not set.")
         return self._redis_url
 
     def with_redis_url(self, redis_url: str):
+        """
+        Set the Redis URL.
+        :param redis_url: The Redis URL.
+        :return: The Redis service bus configuration.
+        :rtype: RedisServiceBusConfiguration
+        :raises ValueError: If the Redis URL is empty.
+        """
         if not redis_url or redis_url == "":
             raise ValueError("redis_url must not be empty")
         self._redis_url = redis_url
