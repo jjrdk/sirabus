@@ -16,9 +16,7 @@ class RedisRouterConfiguration(RouterConfiguration):
 
     def __init__(
         self,
-        message_writer: Callable[
-            [BaseCommand, HierarchicalTopicMap], Tuple[str, str]
-        ],
+        message_writer: Callable[[BaseCommand, HierarchicalTopicMap], Tuple[str, str]],
         response_reader: Callable[[dict, bytes], CommandResponse | None],
     ) -> None:
         """
