@@ -5,7 +5,8 @@ from uuid import uuid4
 
 from aett.eventstore.base_command import BaseCommand
 
-from sirabus import CommandResponse, IRouteCommands, SqsConfig
+from sirabus import CommandResponse, IRouteCommands
+from sirabus.shared.sqs_config import SqsConfig
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 from sirabus.router import RouterConfiguration
 

@@ -5,8 +5,11 @@ import pathlib
 import uuid
 
 from behave import given, when, then, step, use_step_matcher
+from google.api_core.client_options import ClientOptions
+from google.auth import credentials
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.image import DockerImage
+from testcontainers.google import PubSubContainer
 from testcontainers.localstack import LocalStackContainer
 from testcontainers.rabbitmq import RabbitMqContainer
 from testcontainers.redis import RedisContainer
@@ -14,8 +17,10 @@ from testcontainers.redis import RedisContainer
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 from sirabus.message_pump import MessagePump
 from sirabus.publisher.amqp_publisher import AmqpPublisherConfiguration
+from sirabus.shared.pubsub_config import PubSubConfig
 from sirabus.topography.amqp import TopographyBuilder as AmqpTopographyBuilder
-from sirabus.topography.sqs import TopographyBuilder as SqsTopographyBuilder, SqsConfig
+from sirabus.topography.sqs import TopographyBuilder as SqsTopographyBuilder
+from sirabus.shared.sqs_config import SqsConfig
 from tests.features.steps.command_handlers import (
     StatusCommandHandler,
     InfoCommandHandler,
@@ -70,8 +75,24 @@ def step_impl1(context, broker_type, use_tls):
             pass
         case "redis":
             set_up_redis(context=context, use_tls=use_tls)
+        case "pubsub":
+            set_up_pubsub(context=context, use_tls=use_tls)
         case _:
             raise ValueError(f"Unknown broker type: {broker_type}")
+
+
+def set_up_pubsub(context, use_tls: bool = False):
+    container = PubSubContainer().start()
+    context.containers.append(container)
+    import google
+    import os
+
+    os.environ["PUBSUB_EMULATOR_HOST"] = container.get_pubsub_emulator_host()
+    context.pubsub_config = PubSubConfig(
+        project_id=container.project,
+        creds=google.auth.credentials.AnonymousCredentials(),
+        options=ClientOptions(api_endpoint=container.get_pubsub_emulator_host()),
+    )
 
 
 def set_up_amqp_broker(context, use_tls: bool = False):
@@ -181,6 +202,14 @@ async def step_impl3(context, serializer, broker_type, use_tls):
             configure_cloudevent_redis_service_bus(context=context, use_tls=use_tls)
         case ("pydantic", "redis"):
             configure_pydantic_redis_service_bus(context=context, use_tls=use_tls)
+        case ("cloudevent", "pubsub"):
+            await configure_cloudevent_pubsub_service_bus(
+                context=context, use_tls=use_tls
+            )
+        case ("pydantic", "pubsub"):
+            await configure_pydantic_pubsub_service_bus(
+                context=context, use_tls=use_tls
+            )
 
     await context.consumer.run()
     logging.debug("Topography built.")
@@ -204,6 +233,52 @@ def configure_ssl(config, use_tls: bool):
     )
     ssl_context.check_hostname = False
     return config.with_ssl_config(ssl_context).with_ca_cert_file(str(certs_path))
+
+
+async def configure_cloudevent_pubsub_service_bus(context, use_tls: bool = False):
+    from sirabus.servicebus.pubsub_servicebus import (
+        PubSubServiceBusConfiguration,
+        PubSubServiceBus,
+    )
+
+    from sirabus.topography.pubsub import TopographyBuilder
+
+    builder = TopographyBuilder(
+        topic_map=context.topic_map, config=context.pubsub_config
+    )
+    await builder.build()
+
+    config = configure_ssl(
+        PubSubServiceBusConfiguration.for_cloud_event()
+        .with_pubsub_config(context.pubsub_config)
+        .with_topic_map(context.topic_map)
+        .with_handlers(*context.handlers),
+        use_tls=use_tls,
+    )
+    context.consumer = PubSubServiceBus(config)
+
+
+async def configure_pydantic_pubsub_service_bus(context, use_tls: bool = False):
+    from sirabus.servicebus.pubsub_servicebus import (
+        PubSubServiceBusConfiguration,
+        PubSubServiceBus,
+    )
+
+    from sirabus.topography.pubsub import TopographyBuilder
+
+    builder = TopographyBuilder(
+        topic_map=context.topic_map, config=context.pubsub_config
+    )
+    await builder.build()
+
+    config = configure_ssl(
+        PubSubServiceBusConfiguration.default()
+        .with_pubsub_config(context.pubsub_config)
+        .with_topic_map(context.topic_map)
+        .with_handlers(*context.handlers),
+        use_tls=use_tls,
+    )
+    context.consumer = PubSubServiceBus(config)
 
 
 async def configure_cloudevent_amqp_service_bus(context, use_tls: bool = False):
@@ -401,7 +476,45 @@ async def step_impl4(context, serializer, topic, broker_type, use_tls):
             publisher = create_pydantic_redis_publisher(
                 context=context, use_tls=use_tls
             )
+        case ("cloudevent", "pubsub"):
+            publisher = create_cloudevent_pubsub_publisher(
+                context=context, use_tls=use_tls
+            )
+        case ("pydantic", "pubsub"):
+            publisher = create_pydantic_pubsub_publisher(
+                context=context, use_tls=use_tls
+            )
     await publisher.publish(event)
+
+
+def create_cloudevent_pubsub_publisher(context, use_tls: bool = False):
+    from sirabus.publisher.pubsub_publisher import (
+        PubSubPublisherConfiguration,
+        PubSubPublisher,
+    )
+
+    config = configure_ssl(
+        PubSubPublisherConfiguration.for_cloud_event()
+        .with_pubsub_config(context.pubsub_config)
+        .with_topic_map(context.topic_map),
+        use_tls=use_tls,
+    )
+    return PubSubPublisher(config)
+
+
+def create_pydantic_pubsub_publisher(context, use_tls: bool = False):
+    from sirabus.publisher.pubsub_publisher import (
+        PubSubPublisherConfiguration,
+        PubSubPublisher,
+    )
+
+    config = configure_ssl(
+        PubSubPublisherConfiguration.default()
+        .with_pubsub_config(context.pubsub_config)
+        .with_topic_map(context.topic_map),
+        use_tls=use_tls,
+    )
+    return PubSubPublisher(config)
 
 
 def create_cloudevent_amqp_publisher(context, use_tls: bool = False):

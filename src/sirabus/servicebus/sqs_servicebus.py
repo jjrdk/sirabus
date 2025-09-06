@@ -11,8 +11,8 @@ from sirabus import (
     IHandleCommands,
     CommandResponse,
     get_type_param,
-    SqsConfig,
 )
+from sirabus.shared.sqs_config import SqsConfig
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 from sirabus.servicebus import ServiceBus, ServiceBusConfiguration
 
@@ -151,7 +151,7 @@ class SqsServiceBus(ServiceBus[SqsServiceBusConfiguration]):
     It supports hierarchical topic mapping and can handle both events and commands.
     It is designed to work with AWS credentials and SQS queue configurations provided in the SqsConfig object.
     It also allows for prefetching messages from the SQS queue to improve performance.
-    This class is thread-safe and can be used in a multi-threaded environment.
+    This class is thread-safe and can be used in a multithreaded environment.
     It is designed to be used with the Sirabus framework for building event-driven applications.
     It provides methods for running the service bus, stopping it, and sending command responses.
     :note: This class is designed to be used with the Sirabus framework for building event-driven applications.
