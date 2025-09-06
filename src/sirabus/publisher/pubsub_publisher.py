@@ -5,10 +5,10 @@ from aett.eventstore import BaseEvent
 from sirabus import IPublishEvents
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
 from sirabus.publisher import PublisherConfiguration
-from sirabus.shared.sqs_config import SqsConfig
+from sirabus.shared.pubsub_config import PubSubConfig
 
 
-class SqsPublisherConfiguration(PublisherConfiguration):
+class PubSubPublisherConfiguration(PublisherConfiguration):
     def __init__(
         self, event_writer: Callable[[BaseEvent, HierarchicalTopicMap], Tuple[str, str]]
     ):
@@ -17,40 +17,42 @@ class SqsPublisherConfiguration(PublisherConfiguration):
         :param event_writer: A callable that formats the event into a message.
         """
         super().__init__(event_writer=event_writer)
-        self._sqs_config: SqsConfig | None = None
+        self._pubsub_config: PubSubConfig | None = None
 
-    def get_sqs_config(self) -> SqsConfig:
-        if not self._sqs_config:
+    def get_pubsub_config(self) -> PubSubConfig:
+        if not self._pubsub_config:
             raise ValueError("sqs_config has not been set.")
-        return self._sqs_config
+        return self._pubsub_config
 
-    def with_sqs_config(self, sqs_config: SqsConfig) -> "SqsPublisherConfiguration":
+    def with_pubsub_config(
+        self, sqs_config: PubSubConfig
+    ) -> "PubSubPublisherConfiguration":
         if not sqs_config:
             raise ValueError("sqs_config cannot be None.")
-        self._sqs_config = sqs_config
+        self._pubsub_config = sqs_config
         return self
 
     @staticmethod
     def default():
         from sirabus.serialization.pydantic_serialization import write_event
 
-        return SqsPublisherConfiguration(event_writer=write_event)
+        return PubSubPublisherConfiguration(event_writer=write_event)
 
     @staticmethod
     def for_cloud_event():
         from sirabus.serialization.cloudevent_serialization import write_event
 
-        return SqsPublisherConfiguration(event_writer=write_event)
+        return PubSubPublisherConfiguration(event_writer=write_event)
 
 
-class SqsPublisher(IPublishEvents):
+class PubSubPublisher(IPublishEvents):
     """
     Publishes events over SQS.
     """
 
     def __init__(
         self,
-        configuration: SqsPublisherConfiguration,
+        configuration: PubSubPublisherConfiguration,
     ) -> None:
         """
         Initializes the SqsPublisher.
@@ -67,28 +69,29 @@ class SqsPublisher(IPublishEvents):
         Publishes the event to the configured topic.
         :param event: The event to publish.
         """
-
         hierarchical_topic, j = self._configuration.write_event(event)
-        sns_client = self._configuration.get_sqs_config().to_sns_client()
-        import json
+        async with (
+            self._configuration.get_pubsub_config().to_publisher_client() as client
+        ):
+            pubsub_topic = self._configuration.get_topic_map().get_metadata(
+                hierarchical_topic, "pubsub_topic"
+            )
+            from sirabus.shared.pubsub import create_pubsub_message
 
-        metadata = self._configuration.get_topic_map().get_metadata(
-            hierarchical_topic, "arn"
-        )
-        _ = sns_client.publish(
-            TopicArn=metadata,
-            Message=json.dumps({"default": j}),
-            Subject=hierarchical_topic,
-            MessageStructure="json",
-            MessageAttributes={
-                "correlation_id": {
-                    "StringValue": event.correlation_id,
-                    "DataType": "String",
-                },
-                "topic": {
-                    "StringValue": hierarchical_topic,
-                    "DataType": "String",
-                },
-            },
-        )
-        self._configuration.get_logger().debug(f"Published {hierarchical_topic}")
+            response = await client.publish(
+                topic=pubsub_topic,
+                messages=[
+                    create_pubsub_message(
+                        data=j.encode(),
+                        hierarchical_topic=hierarchical_topic,
+                        correlation_id=event.correlation_id,
+                    )
+                ],
+                metadata=[
+                    ("correlation_id", event.correlation_id or ""),
+                    ("topic", hierarchical_topic),
+                ],
+            )
+            self._configuration.get_logger().debug(
+                f"Published {hierarchical_topic} with id {response.message_ids[0]}"
+            )
