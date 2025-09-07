@@ -87,11 +87,12 @@ def set_up_pubsub(context, use_tls: bool = False):
     import google
     import os
 
-    os.environ["PUBSUB_EMULATOR_HOST"] = container.get_pubsub_emulator_host()
+    host = container.get_pubsub_emulator_host()
+    os.environ["PUBSUB_EMULATOR_HOST"] = host
     context.pubsub_config = PubSubConfig(
         project_id=container.project,
         creds=google.auth.credentials.AnonymousCredentials(),
-        options=ClientOptions(api_endpoint=container.get_pubsub_emulator_host()),
+        options=ClientOptions(api_endpoint=host),
     )
 
 

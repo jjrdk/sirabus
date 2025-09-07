@@ -22,6 +22,7 @@ Feature: Send commands and receive responses over TLS
       | SQS         | pydantic   | get_status      | reply         | status: ok      |
       | SQS         | cloudevent | invalid_command | error         | unknown command |
       | SQS         | pydantic   | invalid_command | error         | unknown command |
+#      | pubsub      | Cannot create separate TLS instances for publisher and subscriber in tests | N/A             | N/A           | N/A             |
 
   Scenario Template: Send multiple commands and receive their responses over TLS
     Given a running <broker_type> message broker with TLS enabled

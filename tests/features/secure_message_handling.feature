@@ -22,6 +22,7 @@ Feature: Secure Event Handling
       | SQS         | cloudevent | test                 |
       | SQS         | pydantic   | test.test_sub.nested |
       | SQS         | pydantic   | test                 |
+#      | pubsub      | Cannot create separate TLS instances for publisher and subscriber in tests | N/A             |
 
   Scenario Template: Multiple event handling segregation over TLS
     Given a running <broker_type> message broker with TLS enabled

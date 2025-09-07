@@ -16,6 +16,10 @@ from sirabus.router.inmemory_command_router import (
     InMemoryRouterConfiguration,
     InMemoryCommandRouter,
 )
+from sirabus.router.pubsub_command_router import (
+    PubSubRouterConfiguration,
+    PubSubCommandRouter,
+)
 from sirabus.router.redis_command_router import (
     RedisRouterConfiguration,
     RedisCommandRouter,
@@ -103,6 +107,22 @@ async def step_impl2(context, serializer, broker_type, use_tls):
                 use_tls=use_tls,
             )
             context.router = RedisCommandRouter(configuration=config)
+        case ("cloudevent", "pubsub"):
+            config = configure_ssl(
+                PubSubRouterConfiguration.for_cloud_event()
+                .with_pubsub_config(context.pubsub_config)
+                .with_topic_map(context.topic_map),
+                use_tls=use_tls,
+            )
+            context.router = PubSubCommandRouter(configuration=config)
+        case ("pydantic", "pubsub"):
+            config = configure_ssl(
+                PubSubRouterConfiguration.default()
+                .with_pubsub_config(context.pubsub_config)
+                .with_topic_map(context.topic_map),
+                use_tls=use_tls,
+            )
+            context.router = PubSubCommandRouter(configuration=config)
         case _:
             raise ValueError(f"Unknown broker type: {serializer} {broker_type}")
     await asyncio.sleep(0.1)
