@@ -35,7 +35,7 @@ class PubSubServiceBusConfiguration(ServiceBusConfiguration):
         self._request_timeout: int = 1
         import uuid
 
-        self._receive_endpoint_name: str = "sqs_" + str(uuid.uuid4())
+        self._receive_endpoint_name: str = "pubsub_" + str(uuid.uuid4())
 
     def get_pubsub_config(self) -> PubSubConfig:
         if self._pubsub_config is None:
@@ -91,15 +91,15 @@ class PubSubServiceBus(ServiceBus[PubSubServiceBusConfiguration]):
     It provides methods for running the service bus, stopping it, and sending command responses.
     It is thread-safe and can be used in a multithreaded environment.
     It supports hierarchical topic mapping and can handle both events and commands.
-    It is designed to work with AWS credentials and SQS queue configurations provided in the SqsConfig object.
-    It also allows for prefetching messages from the SQS queue to improve performance.
+    It is designed to work with GCP credentials and PubSub topic configurations provided in the PubSubConfig object.
+    It also allows for prefetching messages from the PubSub topic to improve performance.
     """
 
     def __init__(self, configuration: PubSubServiceBusConfiguration) -> None:
         """
-        Create a new instance of the SQS service bus consumer class.
+        Create a new instance of the PubSub service bus consumer class.
 
-        :param SqsServiceBusConfiguration configuration: The SQS service bus configuration.
+        :param PubSubServiceBusConfiguration configuration: The PubSub service bus configuration.
         """
         super().__init__(configuration=configuration)
         self.__topics = set(

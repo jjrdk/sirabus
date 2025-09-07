@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Optional
 
 import google.auth.credentials
 from google.api_core.client_options import ClientOptions
@@ -7,20 +7,6 @@ from google.pubsub_v1 import (
     PublisherAsyncClient,
     SubscriberAsyncClient,
 )
-
-
-class ServiceAccountInfo(Dict[str, Any]):
-    project_id: str
-    private_key_id: str
-    private_key: str
-    client_email: str
-    client_id: str
-    auth_uri: str
-    token_uri: str
-    auth_provider_x509_cert_url: str
-    client_x509_cert_url: str
-    universe_domain: Optional[str] = "googleapis.com"
-    type: Optional[str] = "service_account"
 
 
 class PubSubConfig:
@@ -35,7 +21,6 @@ class PubSubConfig:
         project_id: str,
         creds: google.auth.credentials.Credentials,
         options: Optional[ClientOptions] = None,
-        custom_ca_cert: Optional[str] = None,
     ):
         """
         Defines the configuration for Pub/Sub clients.
@@ -45,7 +30,6 @@ class PubSubConfig:
         self._project_id = project_id
         self.__credentials = creds
         self.__options = options
-        self.__custom_ca_cert = custom_ca_cert
 
     def get_project_id(self) -> str:
         """
