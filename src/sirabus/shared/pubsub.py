@@ -8,6 +8,7 @@ def create_pubsub_message(
     hierarchical_topic: str,
     correlation_id: Optional[str] = None,
     message_id: Optional[str] = None,
+    reply_to: Optional[str] = None,
 ) -> PubsubMessage:
     msg = PubsubMessage()
     msg.data = data
@@ -16,4 +17,6 @@ def create_pubsub_message(
         msg.attributes["correlation_id"] = correlation_id
     if message_id:
         msg.attributes["message_id"] = message_id
+    if reply_to:
+        msg.attributes["reply_to"] = reply_to
     return msg

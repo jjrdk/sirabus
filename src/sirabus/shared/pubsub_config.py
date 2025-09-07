@@ -2,6 +2,7 @@ from typing import Any, Dict, Optional
 
 import google.auth.credentials
 from google.api_core.client_options import ClientOptions
+from google.api_core.gapic_v1.client_info import ClientInfo
 from google.pubsub_v1 import (
     PublisherAsyncClient,
     SubscriberAsyncClient,
@@ -34,6 +35,7 @@ class PubSubConfig:
         project_id: str,
         creds: google.auth.credentials.Credentials,
         options: Optional[ClientOptions] = None,
+        custom_ca_cert: Optional[str] = None,
     ):
         """
         Defines the configuration for Pub/Sub clients.
@@ -43,6 +45,7 @@ class PubSubConfig:
         self._project_id = project_id
         self.__credentials = creds
         self.__options = options
+        self.__custom_ca_cert = custom_ca_cert
 
     def get_project_id(self) -> str:
         """
@@ -59,8 +62,11 @@ class PubSubConfig:
         :rtype: google.cloud.pubsub_v1.PublisherClient
         :raises google.api_core.exceptions.GoogleAPIError: If there is an error during client creation
         """
+
         return PublisherAsyncClient(
-            credentials=self.__credentials, client_options=self.__options
+            credentials=self.__credentials,
+            client_options=self.__options,
+            client_info=ClientInfo(user_agent=f"sira-bus/{self._project_id}"),
         )
 
     def to_subscriber_client(self) -> SubscriberAsyncClient:
@@ -73,5 +79,7 @@ class PubSubConfig:
         """
 
         return SubscriberAsyncClient(
-            credentials=self.__credentials, client_options=self.__options
+            credentials=self.__credentials,
+            client_options=self.__options,
+            client_info=ClientInfo(user_agent=f"sira-bus/{self._project_id}"),
         )

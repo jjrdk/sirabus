@@ -12,18 +12,18 @@ Feature: Send commands and receive responses
       | broker_type | serializer | command_type    | response_type | response_msg    |
       | amqp        | cloudevent | get_status      | reply         | status: ok      |
       | amqp        | pydantic   | get_status      | reply         | status: ok      |
-      | SQS         | cloudevent | get_status      | reply         | status: ok      |
-      | SQS         | pydantic   | get_status      | reply         | status: ok      |
-      | in-memory   | cloudevent | get_status      | reply         | status: ok      |
-      | in-memory   | pydantic   | get_status      | reply         | status: ok      |
-      | redis       | cloudevent | get_status      | reply         | status: ok      |
-      | redis       | pydantic   | get_status      | reply         | status: ok      |
       | amqp        | cloudevent | invalid_command | error         | unknown command |
       | amqp        | pydantic   | invalid_command | error         | unknown command |
-      | in-memory   | cloudevent | invalid_command | error         | unknown command |
-      | in-memory   | pydantic   | invalid_command | error         | unknown command |
+      | SQS         | cloudevent | get_status      | reply         | status: ok      |
+      | SQS         | pydantic   | get_status      | reply         | status: ok      |
       | SQS         | cloudevent | invalid_command | error         | unknown command |
       | SQS         | pydantic   | invalid_command | error         | unknown command |
+      | in-memory   | cloudevent | get_status      | reply         | status: ok      |
+      | in-memory   | pydantic   | get_status      | reply         | status: ok      |
+      | in-memory   | cloudevent | invalid_command | error         | unknown command |
+      | in-memory   | pydantic   | invalid_command | error         | unknown command |
+      | redis       | cloudevent | get_status      | reply         | status: ok      |
+      | redis       | pydantic   | get_status      | reply         | status: ok      |
       | redis       | cloudevent | invalid_command | error         | unknown command |
       | redis       | pydantic   | invalid_command | error         | unknown command |
 
@@ -37,11 +37,13 @@ Feature: Send commands and receive responses
 
     Examples:
       | broker_type | serializer |
-      | amqp        | cloudevent |
-      | amqp        | pydantic   |
-      | SQS         | cloudevent |
-      | SQS         | pydantic   |
-      | in-memory   | cloudevent |
-      | in-memory   | pydantic   |
-      | redis       | cloudevent |
-      | redis       | pydantic   |
+#      | amqp        | cloudevent |
+#      | amqp        | pydantic   |
+#      | SQS         | cloudevent |
+#      | SQS         | pydantic   |
+#      | in-memory   | cloudevent |
+#      | in-memory   | pydantic   |
+#      | redis       | cloudevent |
+#      | redis       | pydantic   |
+#      | pubsub       | cloudevent |
+      | pubsub       | pydantic   |

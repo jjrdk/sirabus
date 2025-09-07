@@ -134,15 +134,12 @@ class PubSubServiceBus(ServiceBus[PubSubServiceBusConfiguration]):
                 pubsub_topic = self._configuration.get_topic_map().get_metadata(
                     topic, "pubsub_topic"
                 )
-                try:
-                    subscription = await client.create_subscription(
-                        name=f"projects/{self._configuration.get_pubsub_config().get_project_id()}/subscriptions/{topic}",
-                        topic=pubsub_topic,
-                        ack_deadline_seconds=60,
-                    )
-                    subscriptions.add(subscription.name)
-                except Exception as e:
-                    print(e)
+                subscription = await client.create_subscription(
+                    name=f"projects/{self._configuration.get_pubsub_config().get_project_id()}/subscriptions/{topic}",
+                    topic=pubsub_topic,
+                    ack_deadline_seconds=60,
+                )
+                subscriptions.add(subscription.name)
                 self._configuration.get_logger().debug(
                     f"Subscription {subscription.name} created for topic {topic}."
                 )
@@ -190,16 +187,21 @@ class PubSubServiceBus(ServiceBus[PubSubServiceBusConfiguration]):
                         max_messages=10,
                     )
                     for msg in response.received_messages:
-                        await self.handle_message(
-                            headers={
-                                key: value
-                                for key, value in msg.message.attributes.items()
-                            },
-                            body=msg.message.data,
-                            correlation_id=None,
-                            reply_to=None,
-                            message_id=msg.message.message_id,
-                        )
+                        try:
+                            await self.handle_message(
+                                headers={
+                                    key: value
+                                    for key, value in msg.message.attributes.items()
+                                },
+                                body=msg.message.data,
+                                correlation_id=msg.message.attributes.get(
+                                    "correlation_id", None
+                                ),
+                                reply_to=msg.message.attributes.get("reply_to", None),
+                                message_id=msg.message.message_id,
+                            )
+                        except Exception as e:
+                            print(e)
 
     async def stop(self):
         self._stopped = True
