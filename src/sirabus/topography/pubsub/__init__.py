@@ -45,15 +45,10 @@ class TopographyBuilder:
         the topic map metadata.
         """
         async with self.__config.to_publisher_client() as client:
-            try:
-                for topic in self.__topic_map.get_all():
-                    topic_name = client.topic_path(
-                        self.__config.get_project_id(), topic
-                    )
-                    topic_response = await client.create_topic(name=topic_name)
-                    self.__topic_map.set_metadata(
-                        topic, "pubsub_topic", topic_response.name
-                    )
-                    self.__logger.debug(f"Queue {topic_name} created.")
-            except Exception as e:
-                print(e)
+            for topic in self.__topic_map.get_all():
+                topic_name = client.topic_path(self.__config.get_project_id(), topic)
+                topic_response = await client.create_topic(name=topic_name)
+                self.__topic_map.set_metadata(
+                    topic, "pubsub_topic", topic_response.name
+                )
+                self.__logger.debug(f"Queue {topic_name} created.")
