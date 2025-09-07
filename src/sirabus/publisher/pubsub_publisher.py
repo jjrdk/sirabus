@@ -13,7 +13,7 @@ class PubSubPublisherConfiguration(PublisherConfiguration):
         self, event_writer: Callable[[BaseEvent, HierarchicalTopicMap], Tuple[str, str]]
     ):
         """
-        Initializes the SQS Publisher Configuration with the necessary parameters.
+        Initializes the PubSub Publisher Configuration with the necessary parameters.
         :param event_writer: A callable that formats the event into a message.
         """
         super().__init__(event_writer=event_writer)
@@ -21,15 +21,15 @@ class PubSubPublisherConfiguration(PublisherConfiguration):
 
     def get_pubsub_config(self) -> PubSubConfig:
         if not self._pubsub_config:
-            raise ValueError("sqs_config has not been set.")
+            raise ValueError("pubsub_config has not been set.")
         return self._pubsub_config
 
     def with_pubsub_config(
-        self, sqs_config: PubSubConfig
+        self, pubsub_config: PubSubConfig
     ) -> "PubSubPublisherConfiguration":
-        if not sqs_config:
-            raise ValueError("sqs_config cannot be None.")
-        self._pubsub_config = sqs_config
+        if not pubsub_config:
+            raise ValueError("pubsub_config cannot be None.")
+        self._pubsub_config = pubsub_config
         return self
 
     @staticmethod
@@ -47,7 +47,7 @@ class PubSubPublisherConfiguration(PublisherConfiguration):
 
 class PubSubPublisher(IPublishEvents):
     """
-    Publishes events over SQS.
+    Publishes events over GCP PubSub.
     """
 
     def __init__(
@@ -55,7 +55,7 @@ class PubSubPublisher(IPublishEvents):
         configuration: PubSubPublisherConfiguration,
     ) -> None:
         """
-        Initializes the SqsPublisher.
+        Initializes the PubSubPublisher.
         :param configuration: The publisher configuration.
         :raises ValueError: If the event writer cannot determine the topic for the event.
         :raises TypeError: If the event is not a subclass of BaseEvent.
