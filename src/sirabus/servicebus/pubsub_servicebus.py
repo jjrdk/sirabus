@@ -187,21 +187,18 @@ class PubSubServiceBus(ServiceBus[PubSubServiceBusConfiguration]):
                         max_messages=10,
                     )
                     for msg in response.received_messages:
-                        try:
-                            await self.handle_message(
-                                headers={
-                                    key: value
-                                    for key, value in msg.message.attributes.items()
-                                },
-                                body=msg.message.data,
-                                correlation_id=msg.message.attributes.get(
-                                    "correlation_id", None
-                                ),
-                                reply_to=msg.message.attributes.get("reply_to", None),
-                                message_id=msg.message.message_id,
-                            )
-                        except Exception as e:
-                            print(e)
+                        await self.handle_message(
+                            headers={
+                                key: value
+                                for key, value in msg.message.attributes.items()
+                            },
+                            body=msg.message.data,
+                            correlation_id=msg.message.attributes.get(
+                                "correlation_id", None
+                            ),
+                            reply_to=msg.message.attributes.get("reply_to", None),
+                            message_id=msg.message.message_id,
+                        )
 
     async def stop(self):
         self._stopped = True
