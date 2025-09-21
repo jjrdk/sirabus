@@ -119,6 +119,13 @@ class AmqpServiceBusConfiguration(ServiceBusConfiguration):
             command_response_writer=write_command_response,
         )
 
+    @staticmethod
+    def for_custom(message_reader, command_response_writer):
+        return AmqpServiceBusConfiguration(
+            message_reader=message_reader,
+            command_response_writer=command_response_writer,
+        )
+
 
 class AmqpServiceBus(ServiceBus[AmqpServiceBusConfiguration]):
     """
@@ -160,7 +167,7 @@ class AmqpServiceBus(ServiceBus[AmqpServiceBusConfiguration]):
 
     async def __inner_handle_message(self, msg: AbstractIncomingMessage):
         try:
-            await self.handle_message(
+            await self._handle_message(
                 headers=msg.headers,
                 body=msg.body,
                 message_id=msg.message_id,

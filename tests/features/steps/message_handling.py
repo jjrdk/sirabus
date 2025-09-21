@@ -81,7 +81,7 @@ def step_impl1(context, broker_type, use_tls):
             raise ValueError(f"Unknown broker type: {broker_type}")
 
 
-def set_up_pubsub(context, use_tls: bool = False):
+def set_up_pubsub(context, _: bool = False):
     container = PubSubContainer().start()
     context.containers.append(container)
     import google
@@ -389,6 +389,25 @@ def configure_cloudevent_inmemory_service_bus(context, use_tls: bool = False):
     context.consumer = InMemoryServiceBus(config)
 
 
+def configure_pydantic_inmemory_service_bus(context, use_tls: bool = False):
+    context.message_pump = MessagePump()
+    context.message_pump.start()
+
+    from sirabus.servicebus.inmemory_servicebus import (
+        InMemoryConfiguration,
+        InMemoryServiceBus,
+    )
+
+    config = configure_ssl(
+        InMemoryConfiguration.default()
+        .with_topic_map(context.topic_map)
+        .with_handlers(*context.handlers)
+        .with_message_pump(context.message_pump),
+        use_tls=use_tls,
+    )
+    context.consumer = InMemoryServiceBus(config)
+
+
 def configure_cloudevent_redis_service_bus(context, use_tls: bool = False):
     from sirabus.servicebus.redis_servicebus import (
         RedisServiceBusConfiguration,
@@ -419,25 +438,6 @@ def configure_pydantic_redis_service_bus(context, use_tls: bool = False):
         use_tls=use_tls,
     )
     context.consumer = RedisServiceBus(config)
-
-
-def configure_pydantic_inmemory_service_bus(context, use_tls: bool = False):
-    context.message_pump = MessagePump()
-    context.message_pump.start()
-
-    from sirabus.servicebus.inmemory_servicebus import (
-        InMemoryConfiguration,
-        InMemoryServiceBus,
-    )
-
-    config = configure_ssl(
-        InMemoryConfiguration.default()
-        .with_topic_map(context.topic_map)
-        .with_handlers(*context.handlers)
-        .with_message_pump(context.message_pump),
-        use_tls=use_tls,
-    )
-    context.consumer = InMemoryServiceBus(config)
 
 
 @when(

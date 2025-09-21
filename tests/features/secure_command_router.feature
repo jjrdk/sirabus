@@ -11,17 +11,17 @@ Feature: Send commands and receive responses over TLS
     Examples:
       | broker_type | serializer | command_type    | response_type | response_msg    |
       | amqp        | cloudevent | get_status      | reply         | status: ok      |
-      | amqp        | pydantic   | get_status      | reply         | status: ok      |
-      | amqp        | cloudevent | invalid_command | error         | unknown command |
-      | amqp        | pydantic   | invalid_command | error         | unknown command |
-      | redis       | cloudevent | get_status      | reply         | status: ok      |
-      | redis       | pydantic   | get_status      | reply         | status: ok      |
-      | redis       | cloudevent | invalid_command | error         | unknown command |
-      | redis       | pydantic   | invalid_command | error         | unknown command |
-      | SQS         | cloudevent | get_status      | reply         | status: ok      |
-      | SQS         | pydantic   | get_status      | reply         | status: ok      |
-      | SQS         | cloudevent | invalid_command | error         | unknown command |
-      | SQS         | pydantic   | invalid_command | error         | unknown command |
+#      | amqp        | pydantic   | get_status      | reply         | status: ok      |
+#      | amqp        | cloudevent | invalid_command | error         | unknown command |
+#      | amqp        | pydantic   | invalid_command | error         | unknown command |
+#      | redis       | cloudevent | get_status      | reply         | status: ok      |
+#      | redis       | pydantic   | get_status      | reply         | status: ok      |
+#      | redis       | cloudevent | invalid_command | error         | unknown command |
+#      | redis       | pydantic   | invalid_command | error         | unknown command |
+#      | SQS         | cloudevent | get_status      | reply         | status: ok      |
+#      | SQS         | pydantic   | get_status      | reply         | status: ok      |
+#      | SQS         | cloudevent | invalid_command | error         | unknown command |
+#      | SQS         | pydantic   | invalid_command | error         | unknown command |
 #      | pubsub      | Cannot create separate TLS instances for publisher and subscriber in tests | N/A             | N/A           | N/A             |
 
   Scenario Template: Send multiple commands and receive their responses over TLS

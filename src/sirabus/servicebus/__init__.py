@@ -78,7 +78,12 @@ class ServiceBus[TConfiguration: ServiceBusConfiguration](abc.ABC):
         """
         raise NotImplementedError()
 
-    async def handle_message(
+    async def _pre_handle_message(
+        self, headers: dict, body: bytes
+    ) -> Tuple[dict, BaseEvent | BaseCommand]:
+        return self._configuration.read(headers, body)
+
+    async def _handle_message(
         self,
         headers: dict,
         body: bytes,
@@ -98,45 +103,13 @@ class ServiceBus[TConfiguration: ServiceBusConfiguration](abc.ABC):
         :raises Exception: If there is an error during message handling or response sending.
         :return: None
         """
-        headers, event = self._configuration.read(headers, body)
+        headers, event = await self._pre_handle_message(headers, body)
         if isinstance(event, BaseEvent):
-            await self.handle_event(event, headers)
+            await self._handle_event(event, headers)
         elif isinstance(event, BaseCommand):
-            topic_map = self._configuration.get_topic_map()
-            command_handler = next(
-                (
-                    h
-                    for h in self._configuration.get_handlers()
-                    if (
-                        isinstance(h, IHandleCommands)
-                        and topic_map.get_from_type(type(event))
-                        == topic_map.get_from_type(get_type_param(h))
-                    )
-                ),
-                None,
-            )
-            if not command_handler:
-                if not reply_to:
-                    self._configuration.get_logger().error(
-                        f"No command handler found for command {type(event)} with correlation ID {correlation_id} "
-                        f"and no reply_to field provided."
-                    )
-                    return
-                await self._send_command_response(
-                    response=CommandResponse(success=False, message="unknown command"),
-                    message_id=message_id,
-                    correlation_id=correlation_id,
-                    reply_to=reply_to,
-                )
-                return
-            response = await command_handler.handle(command=event, headers=headers)
-            if not reply_to:
-                self._configuration.get_logger().error(
-                    f"Reply to field is empty for command {type(event)} with correlation ID {correlation_id}."
-                )
-                return
-            await self._send_command_response(
-                response=response,
+            await self._handle_command(
+                command=event,
+                headers=headers,
                 message_id=message_id,
                 correlation_id=correlation_id,
                 reply_to=reply_to,
@@ -146,7 +119,56 @@ class ServiceBus[TConfiguration: ServiceBusConfiguration](abc.ABC):
         else:
             raise TypeError(f"Unexpected message type: {type(event)}")
 
-    async def handle_event(self, event: BaseEvent, headers: dict) -> None:
+    async def _handle_command(
+        self,
+        command: BaseCommand,
+        headers: dict,
+        message_id: str | None,
+        reply_to: str | None,
+        correlation_id: str | None,
+    ) -> None:
+        topic_map = self._configuration.get_topic_map()
+        command_type = type(command)
+        command_handler = next(
+            (
+                h
+                for h in self._configuration.get_handlers()
+                if (
+                    isinstance(h, IHandleCommands)
+                    and topic_map.get_from_type(command_type)
+                    == topic_map.get_from_type(get_type_param(h))
+                )
+            ),
+            None,
+        )
+        if not command_handler:
+            if not reply_to:
+                self._configuration.get_logger().error(
+                    f"No command handler found for command {command_type} with correlation ID {correlation_id} "
+                    f"and no reply_to field provided."
+                )
+                return
+            await self._send_command_response(
+                response=CommandResponse(success=False, message="unknown command"),
+                message_id=message_id,
+                correlation_id=correlation_id,
+                reply_to=reply_to,
+            )
+            return
+        response = await command_handler.handle(command=command, headers=headers)
+        if not reply_to:
+            self._configuration.get_logger().error(
+                f"Reply to field is empty for command {command_type} with correlation ID {correlation_id}."
+            )
+            return
+        await self._send_command_response(
+            response=response,
+            message_id=message_id,
+            correlation_id=correlation_id,
+            reply_to=reply_to,
+        )
+
+    async def _handle_event(self, event: BaseEvent, headers: dict) -> None:
         """
         Handles an event by dispatching it to all registered event handlers that can handle the event type.
         :param event: The event to handle.
