@@ -76,7 +76,7 @@ def step_impl1(context, broker_type, use_tls):
         case "redis":
             set_up_redis(context=context, use_tls=use_tls)
         case "pubsub":
-            set_up_pubsub(context=context, use_tls=use_tls)
+            set_up_pubsub(context=context)
         case _:
             raise ValueError(f"Unknown broker type: {broker_type}")
 

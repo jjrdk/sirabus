@@ -45,5 +45,5 @@ Feature: Send commands and receive responses
       | in-memory   | pydantic   |
       | redis       | cloudevent |
       | redis       | pydantic   |
-#      | pubsub       | cloudevent |
-#      | pubsub       | pydantic   |
+      | pubsub       | cloudevent |
+      | pubsub       | pydantic   |
