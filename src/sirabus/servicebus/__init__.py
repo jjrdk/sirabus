@@ -107,6 +107,10 @@ class ServiceBus[TConfiguration: ServiceBusConfiguration](abc.ABC):
         if isinstance(event, BaseEvent):
             await self._handle_event(event, headers)
         elif isinstance(event, BaseCommand):
+            if not reply_to:
+                raise RuntimeError(
+                    f"Reply to field is empty for command {type(event)} with correlation ID {correlation_id}."
+                )
             await self._handle_command(
                 command=event,
                 headers=headers,
@@ -124,7 +128,7 @@ class ServiceBus[TConfiguration: ServiceBusConfiguration](abc.ABC):
         command: BaseCommand,
         headers: dict,
         message_id: str | None,
-        reply_to: str | None,
+        reply_to: str,
         correlation_id: str | None,
     ) -> None:
         topic_map = self._configuration.get_topic_map()
@@ -142,12 +146,6 @@ class ServiceBus[TConfiguration: ServiceBusConfiguration](abc.ABC):
             None,
         )
         if not command_handler:
-            if not reply_to:
-                self._configuration.get_logger().error(
-                    f"No command handler found for command {command_type} with correlation ID {correlation_id} "
-                    f"and no reply_to field provided."
-                )
-                return
             await self._send_command_response(
                 response=CommandResponse(success=False, message="unknown command"),
                 message_id=message_id,
@@ -156,11 +154,6 @@ class ServiceBus[TConfiguration: ServiceBusConfiguration](abc.ABC):
             )
             return
         response = await command_handler.handle(command=command, headers=headers)
-        if not reply_to:
-            self._configuration.get_logger().error(
-                f"Reply to field is empty for command {command_type} with correlation ID {correlation_id}."
-            )
-            return
         await self._send_command_response(
             response=response,
             message_id=message_id,
