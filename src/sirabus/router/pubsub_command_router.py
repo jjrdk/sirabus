@@ -149,6 +149,7 @@ class PubSubCommandRouter(IRouteCommands):
                     subscription=subscription.name,
                     max_messages=1,
                     return_immediately=True,
+                    timeout=10.0,
                 )
                 for msg in pull_response.received_messages:
                     message_attributes: Dict[str, str] = {

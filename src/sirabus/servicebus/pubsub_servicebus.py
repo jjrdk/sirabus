@@ -191,7 +191,8 @@ class PubSubServiceBus(ServiceBus[PubSubServiceBusConfiguration]):
                     response = await subscriber_client.pull(
                         subscription=subscription,
                         return_immediately=True,
-                        max_messages=10,
+                        max_messages=self._configuration.get_prefetch_count(),
+                        timeout=10.0,
                     )
                     await asyncio.gather(
                         *(
