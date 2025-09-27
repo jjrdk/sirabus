@@ -77,6 +77,13 @@ class PubSubServiceBusConfiguration(ServiceBusConfiguration):
             command_response_writer=write_command_response,
         )
 
+    @staticmethod
+    def for_custom(message_reader, command_response_writer):
+        return PubSubServiceBusConfiguration(
+            message_reader=message_reader,
+            command_response_writer=command_response_writer,
+        )
+
 
 class PubSubServiceBus(ServiceBus[PubSubServiceBusConfiguration]):
     """
@@ -186,19 +193,23 @@ class PubSubServiceBus(ServiceBus[PubSubServiceBusConfiguration]):
                         return_immediately=True,
                         max_messages=10,
                     )
-                    for msg in response.received_messages:
-                        await self.handle_message(
-                            headers={
-                                key: value
-                                for key, value in msg.message.attributes.items()
-                            },
-                            body=msg.message.data,
-                            correlation_id=msg.message.attributes.get(
-                                "correlation_id", None
-                            ),
-                            reply_to=msg.message.attributes.get("reply_to", None),
-                            message_id=msg.message.message_id,
+                    await asyncio.gather(
+                        *(
+                            self._handle_message(
+                                headers={
+                                    key: value
+                                    for key, value in msg.message.attributes.items()
+                                },
+                                body=msg.message.data,
+                                correlation_id=msg.message.attributes.get(
+                                    "correlation_id", None
+                                ),
+                                reply_to=msg.message.attributes.get("reply_to", None),
+                                message_id=msg.message.message_id,
+                            )
+                            for msg in response.received_messages
                         )
+                    )
 
     async def stop(self):
         self._stopped = True

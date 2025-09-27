@@ -143,6 +143,13 @@ class SqsServiceBusConfiguration(ServiceBusConfiguration):
             command_response_writer=write_command_response,
         )
 
+    @staticmethod
+    def for_custom(message_reader, command_response_writer):
+        return SqsServiceBusConfiguration(
+            message_reader=message_reader,
+            command_response_writer=command_response_writer,
+        )
+
 
 class SqsServiceBus(ServiceBus[SqsServiceBusConfiguration]):
     """
@@ -281,7 +288,7 @@ class SqsServiceBus(ServiceBus[SqsServiceBusConfiguration]):
                         message_attributes[key] = value.get("Value", None)
                 try:
                     loop.run_until_complete(
-                        self.handle_message(
+                        self._handle_message(
                             headers=message_attributes,
                             body=body.get("Message", None),
                             message_id=body.get("MessageId", None),

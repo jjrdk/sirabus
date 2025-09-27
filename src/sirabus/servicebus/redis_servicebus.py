@@ -74,6 +74,13 @@ class RedisServiceBusConfiguration(ServiceBusConfiguration):
             command_response_writer=write_command_response,
         )
 
+    @staticmethod
+    def for_custom(message_reader, command_response_writer):
+        return RedisServiceBusConfiguration(
+            message_reader=message_reader,
+            command_response_writer=command_response_writer,
+        )
+
 
 class RedisServiceBus(ServiceBus[RedisServiceBusConfiguration]):
     """
@@ -177,7 +184,7 @@ class RedisServiceBus(ServiceBus[RedisServiceBusConfiguration]):
                 )
                 if message is not None:
                     data = json.loads(message["data"])
-                    await self.handle_message(
+                    await self._handle_message(
                         headers={"topic": message["channel"].decode()},
                         body=data.get("body", b""),
                         message_id=data.get("message_id", None),

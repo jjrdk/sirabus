@@ -37,13 +37,13 @@ Feature: Send commands and receive responses
 
     Examples:
       | broker_type | serializer |
-#      | amqp        | cloudevent |
-#      | amqp        | pydantic   |
-#      | SQS         | cloudevent |
-#      | SQS         | pydantic   |
-#      | in-memory   | cloudevent |
-#      | in-memory   | pydantic   |
-#      | redis       | cloudevent |
-#      | redis       | pydantic   |
-#      | pubsub       | cloudevent |
+      | amqp        | cloudevent |
+      | amqp        | pydantic   |
+      | SQS         | cloudevent |
+      | SQS         | pydantic   |
+      | in-memory   | cloudevent |
+      | in-memory   | pydantic   |
+      | redis       | cloudevent |
+      | redis       | pydantic   |
+      | pubsub       | cloudevent |
       | pubsub       | pydantic   |

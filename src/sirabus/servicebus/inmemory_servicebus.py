@@ -70,6 +70,13 @@ class InMemoryConfiguration(ServiceBusConfiguration):
             command_response_writer=write_command_response,
         )
 
+    @staticmethod
+    def for_custom(message_reader, command_response_writer):
+        return InMemoryConfiguration(
+            message_reader=message_reader,
+            command_response_writer=command_response_writer,
+        )
+
 
 class InMemoryServiceBus(ServiceBus[InMemoryConfiguration], MessageConsumer):
     def __init__(self, configuration: InMemoryConfiguration) -> None:
@@ -97,6 +104,16 @@ class InMemoryServiceBus(ServiceBus[InMemoryConfiguration], MessageConsumer):
                 self._subscription
             )
         await asyncio.sleep(0)
+
+    async def handle_message(
+        self,
+        headers: dict,
+        body: bytes,
+        message_id: str | None,
+        correlation_id: str | None,
+        reply_to: str | None,
+    ) -> None:
+        await self._handle_message(headers, body, message_id, correlation_id, reply_to)
 
     async def _send_command_response(
         self,
