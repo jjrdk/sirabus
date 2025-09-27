@@ -1,7 +1,7 @@
 [project]
 name = "sirabus"
 version = "0.0.0"
-description = "Service Bus application pattern for Python using AMQP, SQS or Redis."
+description = "Service Bus application pattern for Python with support for multiple messaging protocols."
 readme = "README.md"
 authors = [
     { name = "Jacob Reimers", email = "pypi@reimers.io" }
