@@ -31,7 +31,6 @@ class SqsServiceBusConfiguration(ServiceBusConfiguration):
         )
         self._sqs_config: Optional[SqsConfig] = None
         self._prefetch_count: int = 10
-        self._request_timeout: int = 1
         import uuid
 
         self._receive_endpoint_name: str = "sqs_" + str(uuid.uuid4())
@@ -49,14 +48,6 @@ class SqsServiceBusConfiguration(ServiceBusConfiguration):
         :rtype: str
         """
         return self._receive_endpoint_name
-
-    def get_request_timeout(self) -> int:
-        """
-        Get the request timeout in seconds.
-        :return: The request timeout in seconds.
-        :rtype: int
-        """
-        return self._request_timeout
 
     def get_sqs_config(self) -> SqsConfig:
         """
@@ -79,19 +70,6 @@ class SqsServiceBusConfiguration(ServiceBusConfiguration):
         if prefetch_count < 1:
             raise ValueError("prefetch_count must be >= 1")
         self._prefetch_count = prefetch_count
-        return self
-
-    def with_request_timeout(self, request_timeout: int):
-        """
-        Set the request timeout in seconds.
-        :param int request_timeout: The request timeout in seconds. Must be > 0.
-        :raises ValueError: If request_timeout is less than or equal to 0.
-        :return: The SqsServiceBusConfiguration instance.
-        :rtype: SqsServiceBusConfiguration
-        """
-        if request_timeout <= 0:
-            raise ValueError("request_timeout must be > 0")
-        self._request_timeout = request_timeout
         return self
 
     def with_receive_endpoint_name(self, receive_endpoint_name: str):
@@ -273,12 +251,12 @@ class SqsServiceBus(ServiceBus[SqsServiceBusConfiguration]):
                 self._configuration.get_logger().exception(
                     "Error receiving messages from SQS queue", exc_info=e
                 )
-                time.sleep(self._configuration.get_request_timeout())
+                time.sleep(self._configuration.get_timeout_seconds())
                 continue
 
             messages = response.get("Messages", [])
             if not messages:
-                time.sleep(self._configuration.get_request_timeout())
+                time.sleep(self._configuration.get_timeout_seconds())
                 continue
             for message in messages:
                 body = json.loads(message.get("Body", None))

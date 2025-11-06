@@ -30,9 +30,8 @@ class PubSubServiceBusConfiguration(ServiceBusConfiguration):
             message_reader=message_reader,
             command_response_writer=command_response_writer,
         )
+        self._prefetch_count = 10
         self._pubsub_config: Optional[PubSubConfig] = None
-        self._prefetch_count: int = 10
-        self._request_timeout: int = 1
         import uuid
 
         self._receive_endpoint_name: str = "pubsub_" + str(uuid.uuid4())
@@ -191,7 +190,8 @@ class PubSubServiceBus(ServiceBus[PubSubServiceBusConfiguration]):
                     response = await subscriber_client.pull(
                         subscription=subscription,
                         return_immediately=True,
-                        max_messages=10,
+                        max_messages=self._configuration.get_prefetch_count(),
+                        timeout=self._configuration.get_timeout_seconds(),
                     )
                     await asyncio.gather(
                         *(
