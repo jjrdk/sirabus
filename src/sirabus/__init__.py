@@ -106,6 +106,7 @@ class EndpointConfiguration(ABC):
         self._logger = logging.getLogger("ServiceBus")
         self._ssl_config = None
         self._ca_cert_file = None
+        self._timeout_seconds = 30
 
     def get_topic_map(self) -> HierarchicalTopicMap:
         """
@@ -121,6 +122,13 @@ class EndpointConfiguration(ABC):
         """
         return self._logger
 
+    def get_timeout_seconds(self) -> int:
+        """
+        Gets the timeout in seconds for the endpoint configuration.
+        :return: The timeout in seconds.
+        """
+        return self._timeout_seconds
+
     def get_ssl_config(self) -> Optional[SSLContext]:
         """
         Gets the SSL/TLS configuration for secure connections.
@@ -132,6 +140,15 @@ class EndpointConfiguration(ABC):
         Gets the CA certificate file path for SSL/TLS connections.
         """
         return self._ca_cert_file
+
+    def with_timeout_seconds(self, timeout_seconds: int) -> Self:
+        """
+        Sets the timeout in seconds for the endpoint configuration.
+        :param timeout_seconds: The timeout in seconds.
+        :return: The EndpointConfiguration instance.
+        """
+        self._timeout_seconds = timeout_seconds
+        return self
 
     def with_topic_map(self, topic_map: HierarchicalTopicMap) -> Self:
         """
