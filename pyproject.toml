@@ -46,7 +46,7 @@ dev = [
 [tool.behave]
 capture = false
 junit = false
-logging_level = "DEBUG"
+logging_level = "CRITICAL"
 outfiles = ["test_report.txt"]
 paths = ["tests/features"]
 
