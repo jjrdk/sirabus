@@ -172,6 +172,7 @@ class PubSubCommandRouter(IRouteCommands):
                         future, _ = inflight
                         if future and not future.done():
                             future.set_result(response)
+                            del self.__inflight[correlation_id]
                             response_received = True
                             await subscriber_client.acknowledge(
                                 subscription=subscription.name, ack_ids=[msg.ack_id]
