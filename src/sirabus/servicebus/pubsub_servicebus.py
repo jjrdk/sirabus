@@ -186,7 +186,7 @@ class PubSubServiceBus(ServiceBus[PubSubServiceBusConfiguration]):
                         f"Error creating subscription for topic {topic_name}: {e}"
                     )
                     raise
-
+        return subscriptions
     async def _consume_messages(self):
         """
         Starts consuming messages from the PubSub subscriptions.
