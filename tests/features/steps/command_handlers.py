@@ -1,4 +1,4 @@
-from steps.test_types import StatusCommand, InfoCommand
+from tests.features.steps.test_types import StatusCommand, InfoCommand
 from sirabus import IHandleCommands, CommandResponse
 
 

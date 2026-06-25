@@ -1,5 +1,4 @@
 import asyncio
-from threading import Thread
 from typing import (
     Callable,
     Dict,
@@ -11,6 +10,7 @@ from typing import (
 )
 
 from aett.eventstore import BaseEvent, BaseCommand
+from google.api_core import exceptions as gcp_exceptions
 
 from sirabus import IHandleEvents, IHandleCommands, CommandResponse, get_type_param
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
@@ -122,38 +122,22 @@ class PubSubServiceBus(ServiceBus[PubSubServiceBusConfiguration]):
         self._configuration = configuration
         self.__subscriptions: Set[str] = set()
         self._stopped = False
-        self.__pubsub_thread: Optional[Thread] = None
+        self.__read_task: Optional[asyncio.Task] = None
 
     async def run(self):
-        self._configuration.get_logger().debug("Starting service bus")
-        async with (
-            self._configuration.get_pubsub_config().to_subscriber_client() as client
-        ):
-            relationships = (
-                self._configuration.get_topic_map().build_parent_child_relationships()
+        relationships = (
+            self._configuration.get_topic_map().build_parent_child_relationships()
+        )
+        topic_hierarchy = set(self._get_topic_hierarchy(self.__topics, relationships))
+        topics_to_subscribe = set()
+        for topic in topic_hierarchy:
+            pubsub_topic = self._configuration.get_topic_map().get_metadata(
+                topic, "pubsub_topic"
             )
-            topic_hierarchy = set(
-                self._get_topic_hierarchy(self.__topics, relationships)
-            )
-            subscriptions = set[str]()
-            for topic in topic_hierarchy:
-                pubsub_topic = self._configuration.get_topic_map().get_metadata(
-                    topic, "pubsub_topic"
-                )
-                subscription = await client.create_subscription(
-                    name=f"projects/{self._configuration.get_pubsub_config().get_project_id()}/subscriptions/{topic}",
-                    topic=pubsub_topic,
-                    ack_deadline_seconds=60,
-                )
-                subscriptions.add(subscription.name)
-                self._configuration.get_logger().debug(
-                    f"Subscription {subscription.name} created for topic {topic}."
-                )
-            self.__pubsub_thread = Thread(
-                target=asyncio.run,
-                args=(self._consume_messages(subscriptions=subscriptions),),
-            )
-            self.__pubsub_thread.start()
+            topics_to_subscribe.add((topic, pubsub_topic))
+
+        self.__subscriptions = await self._create_subscriptions(topics_to_subscribe)
+        self.__read_task = asyncio.create_task(self._consume_messages())
 
     def _get_topic_hierarchy(
         self, topics: Set[str], relationships: Dict[str, Set[str]]
@@ -175,24 +159,67 @@ class PubSubServiceBus(ServiceBus[PubSubServiceBusConfiguration]):
             yield from self._get_topic_hierarchy(children, relationships)
         yield topic
 
-    async def _consume_messages(self, subscriptions: Set[str]):
+    async def _create_subscriptions(
+        self, topics_to_subscribe: Set[Tuple[str, str]]
+    ) -> Set[str]:
+        subscriptions = set()
+        async with (
+            self._configuration.get_pubsub_config().to_subscriber_client() as subscriber_client
+        ):
+            for topic_name, pubsub_topic in topics_to_subscribe:
+                subscription_name = (
+                    f"projects/{self._configuration.get_pubsub_config().get_project_id()}"
+                    f"/subscriptions/{topic_name}"
+                )
+                try:
+                    subscription = await subscriber_client.create_subscription(
+                        name=subscription_name,
+                        topic=pubsub_topic,
+                        ack_deadline_seconds=60,
+                    )
+                    subscriptions.add(subscription.name)
+                    self._configuration.get_logger().debug(
+                        f"Subscription {subscription.name} created for topic {topic_name}."
+                    )
+                except Exception as e:
+                    self._configuration.get_logger().exception(
+                        f"Error creating subscription for topic {topic_name}: {e}"
+                    )
+                    raise
+        return subscriptions
+    async def _consume_messages(self):
         """
         Starts consuming messages from the PubSub subscriptions.
-        :param subscriptions: The set of subscriptions to consume from.
         """
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
         async with (
             self._configuration.get_pubsub_config().to_subscriber_client() as subscriber_client
         ):
             while not self._stopped:
-                for subscription in subscriptions:
-                    response = await subscriber_client.pull(
-                        subscription=subscription,
-                        return_immediately=True,
-                        max_messages=self._configuration.get_prefetch_count(),
-                        timeout=self._configuration.get_timeout_seconds(),
-                    )
+                if not self.__subscriptions:
+                    await asyncio.sleep(0.1)
+                    continue
+                for subscription in self.__subscriptions:
+                    if self._stopped:
+                        break
+                    try:
+                        response = await subscriber_client.pull(
+                            subscription=subscription,
+                            return_immediately=True,
+                            max_messages=self._configuration.get_prefetch_count(),
+                            timeout=self._configuration.get_timeout_seconds(),
+                            retry=None,
+                        )
+                    except (
+                        gcp_exceptions.ServiceUnavailable,
+                        gcp_exceptions.RetryError,
+                    ) as e:
+                        if self._stopped:
+                            break
+                        self._configuration.get_logger().debug(
+                            f"Error pulling messages from subscription {subscription}: {e}"
+                        )
+                        continue
+
                     await asyncio.gather(
                         *(
                             self._handle_message(
@@ -213,6 +240,12 @@ class PubSubServiceBus(ServiceBus[PubSubServiceBusConfiguration]):
 
     async def stop(self):
         self._stopped = True
+        if self.__read_task:
+            self.__read_task.cancel()
+            try:
+                await self.__read_task
+            except asyncio.CancelledError:
+                pass
 
     async def _send_command_response(
         self,

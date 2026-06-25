@@ -106,10 +106,12 @@ class PubSubCommandRouter(IRouteCommands):
             declared_queue_response = await pubsub_client.create_topic(
                 name=topic_path, metadata=[("temporary", "true")]
             )
+            future = loop.create_future()
             consume_thread = Thread(
                 target=asyncio.run,
                 args=(self._consume_queue(declared_queue_response.name),),
             )
+            self.__inflight[command.correlation_id] = (future, consume_thread)
             consume_thread.start()
 
             metadata = self._configuration.get_topic_map().get_metadata(
@@ -128,10 +130,8 @@ class PubSubCommandRouter(IRouteCommands):
                     )
                 ],
             )
-            message_id = response.message_ids[0]
+            _ = response.message_ids[0]
             self._configuration.get_logger().debug(f"Published {hierarchical_topic}")
-            future = loop.create_future()
-            self.__inflight[message_id] = (future, consume_thread)
             return future
 
     async def _consume_queue(self, queue_url: str) -> None:
@@ -163,13 +163,18 @@ class PubSubCommandRouter(IRouteCommands):
                             success=False, message="No response received."
                         )
                     try:
-                        future, _ = self.__inflight.get(
-                            message_attributes["message_id"], None
-                        )
+                        correlation_id = message_attributes.get("correlation_id")
+                        if correlation_id is None:
+                            continue
+                        inflight = self.__inflight.get(correlation_id)
+                        if inflight is None:
+                            continue
+                        future, _ = inflight
                         if future and not future.done():
                             future.set_result(response)
+                            del self.__inflight[correlation_id]
                             response_received = True
-                            _ = await subscriber_client.acknowledge(
+                            await subscriber_client.acknowledge(
                                 subscription=subscription.name, ack_ids=[msg.ack_id]
                             )
                     except Exception as e:

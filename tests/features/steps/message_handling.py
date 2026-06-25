@@ -82,23 +82,91 @@ def step_impl1(context, broker_type, use_tls):
 
 
 def set_up_pubsub(context, _: bool = False):
+    import time
+    import socket
+
     container = PubSubContainer().start()
     context.containers.append(container)
     import google
     import os
 
-    host = container.get_pubsub_emulator_host()
-    os.environ["PUBSUB_EMULATOR_HOST"] = host
-    context.pubsub_config = PubSubConfig(
-        project_id=container.project,
-        creds=google.auth.credentials.AnonymousCredentials(),
-        options=ClientOptions(api_endpoint=host),
+    # Wait for the container to be fully initialized and port to be listening
+    max_attempts = 30
+    for attempt in range(max_attempts):
+        host = container.get_pubsub_emulator_host()
+        # Use 127.0.0.1 explicitly to avoid IPv6 resolution issues
+        host_ipv4 = host.replace("localhost", "127.0.0.1")
+        host_parts = host_ipv4.split(":")
+        port = int(host_parts[1])
+
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.settimeout(1)
+                result = sock.connect_ex(("127.0.0.1", port))
+                if result == 0:
+                    # Port is open, we're ready
+                    os.environ["PUBSUB_EMULATOR_HOST"] = host_ipv4
+                    context.pubsub_config = PubSubConfig(
+                        project_id=container.project,
+                        creds=google.auth.credentials.AnonymousCredentials(),
+                        options=ClientOptions(api_endpoint=host_ipv4),
+                    )
+                    return
+        except Exception as e:
+            logging.debug(f"Port check attempt {attempt + 1} failed: {e}")
+
+        time.sleep(0.5)
+
+    raise RuntimeError(
+        f"PubSub container port did not become available after {max_attempts} attempts"
     )
 
 
 def set_up_amqp_broker(context, use_tls: bool = False):
     """Sets up a RabbitMQ container for testing."""
-    container = RabbitMqContainer(vhost=generate_vhost_name("test", "0.0.0"))
+    import re
+    import time
+    from testcontainers.core.container import DockerContainer as BaseDockerContainer
+    from testcontainers.core.waiting_utils import WaitStrategy
+
+    class LogWaitStrategy(WaitStrategy):
+        """Wait for a specific log pattern instead of a pika connection."""
+
+        def __init__(self, pattern: str):
+            super().__init__()
+            self._re = re.compile(pattern, re.IGNORECASE)
+
+        def wait_until_ready(self, container):
+            deadline = time.monotonic() + self._startup_timeout
+            while True:
+                stdout_b, stderr_b = container.get_logs()
+                combined = stdout_b.decode("utf-8", errors="replace") + stderr_b.decode(
+                    "utf-8", errors="replace"
+                )
+                if self._re.search(combined):
+                    return
+                if time.monotonic() > deadline:
+                    raise TimeoutError(
+                        f"Container logs did not match '{self._re.pattern}' "
+                        f"within {self._startup_timeout}s"
+                    )
+                time.sleep(self._poll_interval)
+
+    class LogWaitRabbitMqContainer(RabbitMqContainer):
+        """RabbitMQ container that waits for startup via log messages instead of pika.
+        The default pika-based readiness_probe can hang if RabbitMQ accepts TCP connections
+        before its AMQP listener is ready, causing pika to block indefinitely."""
+
+        def start(self):
+            # Start the Docker container without the pika readiness probe
+            BaseDockerContainer.start(self)
+            # Wait for RabbitMQ's startup completion log message
+            LogWaitStrategy(r"Server startup complete|started OK").wait_until_ready(
+                self
+            )
+            return self
+
+    container = LogWaitRabbitMqContainer(vhost=generate_vhost_name("test", "0.0.0"))
     if use_tls:
         current_dir = pathlib.Path(__file__).resolve().parent
         container = (
@@ -120,20 +188,27 @@ def set_up_amqp_broker(context, use_tls: bool = False):
     virtual_host = (
         "%2F" if params.virtual_host == "/" else params.virtual_host.strip("/")
     )
-    context.connection_string = f"{'amqps' if use_tls else 'amqp'}://{creds.username}:{creds.password}@{params.host}:{container.get_exposed_port(5671) if use_tls else params.port}/{virtual_host}"
+    host = "127.0.0.1" if params.host == "localhost" else params.host
+    context.connection_string = f"{'amqps' if use_tls else 'amqp'}://{creds.username}:{creds.password}@{host}:{container.get_exposed_port(5671) if use_tls else params.port}/{virtual_host}"
 
 
 def set_up_sqs_broker(context, use_tls: bool = False):
+    current_dir = pathlib.Path(__file__).resolve().parent
+    certs_path = f"{current_dir}/../../configs/certs"
+    container = LocalStackContainer(image="localstack/localstack:3.0.0")
     container = (
-        LocalStackContainer(image="localstack/localstack:latest")
-        .with_env("DEBUG", "1")
+        container.with_env("DEBUG", "1")
+        .with_env("DISABLE_EVENTS", "1")
         .with_services("sns", "sqs")
-        .with_volume_mapping(
-            f"{pathlib.Path(__file__).resolve().parent}/../../configs/certs",
-            "/var/lib/localstack/cache",
-        )
-        .start()
     )
+    if use_tls:
+        container = (
+            container.with_env("USE_SSL", "1")
+            .with_env("SKIP_SSL_CERT_DOWNLOAD", "1")
+            .with_env("CUSTOM_SSL_CERT_PATH", "/etc/localstack/certs/server.test.pem")
+            .with_volume_mapping(certs_path, "/etc/localstack/certs")
+        )
+    container = container.start()
     context.containers.append(container)
     context.sqs_config = SqsConfig(
         container.env["AWS_ACCESS_KEY_ID"],
@@ -144,13 +219,15 @@ def set_up_sqs_broker(context, use_tls: bool = False):
         endpoint_url=container.get_url().replace("http://", "https://")
         if use_tls
         else container.get_url(),
-        alternate_ca_bundle=f"{pathlib.Path(__file__).resolve().parent}/../../configs/certs/ca_certificate.pem"
-        if use_tls
-        else None,
+        alternate_ca_bundle=f"{certs_path}/ca_certificate.pem" if use_tls else None,
     )
 
 
 def set_up_redis(context, use_tls: bool = False):
+    import time
+
+    import redis
+
     if use_tls:
         current_dir = pathlib.Path(__file__).resolve().parent
         image = DockerImage(
@@ -169,6 +246,38 @@ def set_up_redis(context, use_tls: bool = False):
         container = RedisContainer().start()
     context.connection_string = f"{'rediss' if use_tls else 'redis'}://{container.get_container_host_ip()}:{container.get_exposed_port(6379)}"
     context.containers.append(container)
+
+    max_attempts = 30
+    for attempt in range(max_attempts):
+        try:
+            if use_tls:
+                current_dir = pathlib.Path(__file__).resolve().parent
+                ca_certs = str(
+                    (
+                        current_dir
+                        / ".."
+                        / ".."
+                        / "configs"
+                        / "certs"
+                        / "ca_certificate.pem"
+                    ).resolve()
+                )
+                client = redis.Redis.from_url(
+                    context.connection_string,
+                    ssl_ca_certs=ca_certs,
+                    ssl_cert_reqs="required",
+                )
+            else:
+                client = redis.Redis.from_url(context.connection_string)
+            client.ping()
+            return
+        except Exception as e:
+            logging.debug(f"Redis readiness check attempt {attempt + 1} failed: {e}")
+            time.sleep(0.5)
+
+    raise RuntimeError(
+        f"Redis broker did not become ready after {max_attempts} attempts"
+    )
 
 
 @step("events have been registered in the hierarchical topic map")

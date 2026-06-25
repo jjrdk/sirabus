@@ -101,8 +101,7 @@ class SqsCommandRouter(IRouteCommands):
             QueueName=f"sqs_{str(uuid4())}"
         )
         queue_url = declared_queue_response["QueueUrl"]
-        consume_thread = Thread(target=self._consume_queue, args=(queue_url,))
-        consume_thread.start()
+        future = loop.create_future()
         sns_client = self._configuration.get_sqs_config().to_sns_client()
         import json
 
@@ -133,8 +132,9 @@ class SqsCommandRouter(IRouteCommands):
         )
         message_id = response["MessageId"]
         self._configuration.get_logger().debug(f"Published {hierarchical_topic}")
-        future = loop.create_future()
+        consume_thread = Thread(target=self._consume_queue, args=(queue_url,))
         self.__inflight[message_id] = (future, consume_thread)
+        consume_thread.start()
         return future
 
     def _consume_queue(self, queue_url: str) -> None:

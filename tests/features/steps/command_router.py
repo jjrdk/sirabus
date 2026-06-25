@@ -4,10 +4,13 @@ from datetime import datetime, timezone
 
 from aett.eventstore import Topic
 from behave import step, when, then, use_step_matcher
-from steps.command_handlers import StatusCommandHandler, InfoCommandHandler
-from steps.test_types import StatusCommand, InvalidCommand, InfoCommand
+from tests.features.steps.command_handlers import (
+    StatusCommandHandler,
+    InfoCommandHandler,
+)
+from tests.features.steps.test_types import StatusCommand, InvalidCommand, InfoCommand
 
-from steps.message_handling import configure_ssl
+use_step_matcher("re")
 from sirabus.router.amqp_command_router import (
     AmqpRouterConfiguration,
     AmqpCommandRouter,
@@ -25,8 +28,9 @@ from sirabus.router.redis_command_router import (
     RedisCommandRouter,
 )
 from sirabus.router.sqs_command_router import SqsRouterConfiguration, SqsCommandRouter
+from tests.features.steps.message_handling import configure_ssl
 
-use_step_matcher("re")
+# use_step_matcher("re")
 
 
 @step("commands have been registered in the hierarchical topic map")

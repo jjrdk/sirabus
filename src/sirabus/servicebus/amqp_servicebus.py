@@ -197,10 +197,13 @@ class AmqpServiceBus(ServiceBus[AmqpServiceBusConfiguration]):
         queue = await self.__channel.declare_queue(
             self._configuration.get_receive_endpoint_name(), exclusive=True
         )
+        topic_exchange = await self.__channel.get_exchange(
+            name="amq.topic", ensure=False
+        )
         for topic in self.__topics:
-            await queue.bind(exchange=topic, routing_key=f"{topic}.#")
+            await queue.bind(exchange=topic_exchange, routing_key=f"{topic}.#")
             self._configuration.get_logger().debug(
-                f"Queue {self._configuration.get_receive_endpoint_name} bound to topic {topic}."
+                f"Queue {self._configuration.get_receive_endpoint_name()} bound to topic {topic}."
             )
         self.__consumer_tag = await queue.consume(callback=self.__inner_handle_message)
 
