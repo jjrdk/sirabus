@@ -2,7 +2,6 @@ from typing import Optional
 
 import google.auth.credentials
 from google.api_core.client_options import ClientOptions
-from google.api_core.gapic_v1.client_info import ClientInfo
 from google.pubsub_v1 import (
     PublisherAsyncClient,
     SubscriberAsyncClient,
@@ -47,6 +46,8 @@ class PubSubConfig:
         :raises google.api_core.exceptions.GoogleAPIError: If there is an error during client creation
         """
 
+        from google.api_core.gapic_v1.client_info import ClientInfo
+
         return PublisherAsyncClient(
             credentials=self.__credentials,
             client_options=self.__options,
@@ -61,6 +62,8 @@ class PubSubConfig:
         :rtype: google.cloud.pubsub_v1.SubscriberClient
         :raises google.api_core.exceptions.GoogleAPIError: If there is an error during client creation
         """
+
+        from google.api_core.gapic_v1.client_info import ClientInfo
 
         return SubscriberAsyncClient(
             credentials=self.__credentials,

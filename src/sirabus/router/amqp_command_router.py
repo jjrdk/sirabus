@@ -127,6 +127,8 @@ class AmqpCommandRouter(IRouteCommands):
             name=str(uuid.uuid4()), durable=False, exclusive=True, auto_delete=True
         )
         consume_tag = await response_queue.consume(callback=self._consume_queue)
+        future = loop.create_future()
+        self.__inflight[consume_tag] = (future, channel)
         exchange = await channel.get_exchange(name="amq.topic", ensure=False)
         self._configuration.get_logger().debug(
             "Channel opened for publishing CloudEvent."
@@ -143,8 +145,6 @@ class AmqpCommandRouter(IRouteCommands):
             routing_key=hierarchical_topic,
         )
         self._configuration.get_logger().debug(f"Published {response}")
-        future = loop.create_future()
-        self.__inflight[consume_tag] = (future, channel)
         return future
 
     async def _consume_queue(self, msg: AbstractIncomingMessage) -> None:
@@ -153,7 +153,13 @@ class AmqpCommandRouter(IRouteCommands):
                 "Message received without consumer tag, cannot process response."
             )
             return
-        future, channel = self.__inflight[msg.consumer_tag]
+        inflight = self.__inflight.get(msg.consumer_tag)
+        if inflight is None:
+            self._configuration.get_logger().error(
+                f"No inflight request found for consumer tag {msg.consumer_tag}."
+            )
+            return
+        future, channel = inflight
         response = (
             CommandResponse(success=False, message="No response received.")
             if not msg

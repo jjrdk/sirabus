@@ -3,11 +3,15 @@ import uuid
 from typing import Optional, Tuple
 
 from aett.eventstore import Topic, BaseEvent, BaseCommand
-from cloudevents.pydantic import CloudEvent
 from pydantic import BaseModel, Field
 
 from sirabus import CommandResponse
 from sirabus.hierarchical_topicmap import HierarchicalTopicMap
+
+try:
+    from cloudevents.v1.pydantic import CloudEvent
+except ImportError:  # pragma: no cover
+    from cloudevents.pydantic import CloudEvent
 
 
 class CloudEventAttributes(BaseModel):

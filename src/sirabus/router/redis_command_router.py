@@ -107,17 +107,17 @@ class RedisCommandRouter(IRouteCommands):
             "correlation_id": command.correlation_id,
             "reply_to": reply_to,
         }
+        future = loop.create_future()
         consume_thread = Thread(
             target=asyncio.run, args=(self._consume_queue(reply_to),)
         )
+        self.__inflight[msg_id] = (future, consume_thread)
         consume_thread.start()
         import json
 
         async with self._build_redis_client() as client:
             await client.publish(channel=hierarchical_topic, message=json.dumps(msg))
         self._configuration.get_logger().debug(f"Published {hierarchical_topic}")
-        future = loop.create_future()
-        self.__inflight[msg_id] = (future, consume_thread)
         return future
 
     def _build_redis_client(self) -> Redis:
