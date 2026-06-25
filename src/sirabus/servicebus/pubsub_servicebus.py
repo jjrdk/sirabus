@@ -181,13 +181,11 @@ class PubSubServiceBus(ServiceBus[PubSubServiceBusConfiguration]):
                     self._configuration.get_logger().debug(
                         f"Subscription {subscription.name} created for topic {topic_name}."
                     )
-                except gcp_exceptions.AlreadyExists:
-                    subscriptions.add(subscription_name)
                 except Exception as e:
-                    self._configuration.get_logger().debug(
+                    self._configuration.get_logger().exception(
                         f"Error creating subscription for topic {topic_name}: {e}"
                     )
-        return subscriptions
+                    raise
 
     async def _consume_messages(self):
         """
