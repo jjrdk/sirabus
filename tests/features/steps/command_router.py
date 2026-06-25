@@ -3,13 +3,14 @@ import uuid
 from datetime import datetime, timezone
 
 from aett.eventstore import Topic
-from behave import step, when, then
+from behave import step, when, then, use_step_matcher
 from tests.features.steps.command_handlers import (
     StatusCommandHandler,
     InfoCommandHandler,
 )
 from tests.features.steps.test_types import StatusCommand, InvalidCommand, InfoCommand
 
+use_step_matcher("re")
 from sirabus.router.amqp_command_router import (
     AmqpRouterConfiguration,
     AmqpCommandRouter,
