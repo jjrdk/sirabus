@@ -9,15 +9,15 @@ resolution-markers = [
 
 [[package]]
 name = "aett"
-version = "3.4.0"
+version = "3.4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "multipledispatch" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5a/1d/b2ddfba1adf7f2389fe49af302a4f116639b1e1f29b87522124c7534983e/aett-3.4.0.tar.gz", hash = "sha256:99730022fa3fb56596fb6b4bcea9c0fd75cd2bcfcaa48a698db8b4b93556e1aa", size = 37921, upload-time = "2025-11-01T15:38:20.7Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0c/45/ca2393bcea011f51b0053860e59eda1c87e2805ac8b8abf65d19ea56806f/aett-3.4.1.tar.gz", hash = "sha256:d0208cb1975f5e899ebd6dfbdc72b20f7f62e8ea983ad98adda3afd7cb028544", size = 37983, upload-time = "2026-06-25T11:12:34.541Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/17/03/3f582783c237809bc9811ed21013108c600cc6cf174d1d9863f51e1fed32/aett-3.4.0-py3-none-any.whl", hash = "sha256:5cf2b058c884d93c98b24dae250a12f2316d73fd6598fe62caa76d259dcd39df", size = 97951, upload-time = "2025-11-01T15:38:19.336Z" },
+    { url = "https://files.pythonhosted.org/packages/ea/3f/0b33a740d62e21c499ac1850a27d6c46fd24e720050f324d9532062f2384/aett-3.4.1-py3-none-any.whl", hash = "sha256:4a0f017d955ca69be1954a4401fcc368f787fa011d463bedc01634ca6d658c8e", size = 97909, upload-time = "2026-06-25T11:12:33.511Z" },
 ]
 
 [[package]]
